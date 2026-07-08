@@ -1,0 +1,27 @@
+{{ 'wishlist.css' | asset_url | stylesheet_tag }}
+
+<div
+  id="wishlist-app-config"
+  data-shop="{{ shop.permanent_domain }}"
+  data-customer-id="{{ customer.id | default: '' }}"
+  data-wishlist-page-url="{{ block.settings.wishlist_page_url | default: '/pages/wishlist' }}"
+  style="display:none"
+></div>
+
+<script src="{{ 'wishlist.js' | asset_url }}" defer="defer"></script>
+
+{% schema %}
+{
+  "name": "Wishlist",
+  "target": "body",
+  "settings": [
+    {
+      "type": "text",
+      "id": "wishlist_page_url",
+      "label": "Wishlist page URL",
+      "default": "/pages/wishlist",
+      "info": "Create a page using the 'Wishlist Page' app block and paste its URL here."
+    }
+  ]
+}
+{% endschema %}

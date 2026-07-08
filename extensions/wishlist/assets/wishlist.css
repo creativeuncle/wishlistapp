@@ -1,0 +1,171 @@
+/* ---------- Heart icon on product cards / product page ---------- */
+.wishlist-heart-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
+}
+
+.wishlist-heart-btn:hover {
+  transform: scale(1.08);
+}
+
+.wishlist-heart-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: #333;
+  stroke-width: 2;
+  fill: none;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.wishlist-heart-btn.is-active svg {
+  fill: #e0355b;
+  stroke: #e0355b;
+}
+
+.wishlist-heart-btn.is-loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Card containers are usually position:static, force relative so the
+   heart button's absolute position anchors correctly */
+.wishlist-card-anchor {
+  position: relative !important;
+}
+
+/* ---------- Header wishlist icon (placed next to the cart icon) ---------- */
+.wishlist-header-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.wishlist-header-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+}
+
+.wishlist-header-icon__count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e0355b;
+  color: #fff;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Fallback floating icon used when the theme's header markup could not
+   be detected automatically */
+.wishlist-header-icon--floating {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 99999;
+  background: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* ---------- Wishlist page grid ---------- */
+.wishlist-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 16px;
+}
+
+.wishlist-page__title {
+  margin-bottom: 24px;
+}
+
+.wishlist-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 24px;
+}
+
+.wishlist-grid__loading,
+.wishlist-grid__empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #666;
+  padding: 40px 0;
+}
+
+.wishlist-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.wishlist-card__image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  background: #f4f4f4;
+}
+
+.wishlist-card__body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.wishlist-card__title {
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+}
+
+.wishlist-card__price {
+  font-size: 13px;
+  color: #555;
+}
+
+.wishlist-card__remove-btn {
+  margin-top: auto;
+  border: 1px solid #ccc;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.wishlist-card__remove-btn:hover {
+  background: #f7f7f7;
+}

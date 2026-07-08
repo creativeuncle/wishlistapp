@@ -1,0 +1,9 @@
+node_modules/
+web/node_modules/
+web/build/
+web/.cache/
+web/prisma/dev.sqlite
+web/prisma/dev.sqlite-journal
+web/.env
+.DS_Store
+.shopify/

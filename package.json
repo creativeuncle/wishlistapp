@@ -1,0 +1,7 @@
+{
+  "name": "wishlist-app-root",
+  "private": true,
+  "workspaces": [
+    "web"
+  ]
+}

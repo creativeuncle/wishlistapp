@@ -1,0 +1,31 @@
+# Learn more: https://shopify.dev/docs/apps/tools/cli/configuration
+client_id = "REPLACE_WITH_YOUR_CLIENT_ID"
+name = "Wishlist"
+handle = "wishlist"
+application_url = "https://REPLACE_WITH_YOUR_APP_URL"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,read_customers,write_content,write_themes"
+
+[auth]
+redirect_urls = [
+  "https://REPLACE_WITH_YOUR_APP_URL/auth/callback",
+  "https://REPLACE_WITH_YOUR_APP_URL/auth/shopify/callback",
+  "https://REPLACE_WITH_YOUR_APP_URL/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[app_proxy]
+url = "https://REPLACE_WITH_YOUR_APP_URL/proxy"
+subpath = "wishlist"
+prefix = "apps"
+
+[pos]
+embedded = false

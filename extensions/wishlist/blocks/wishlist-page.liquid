@@ -1,0 +1,33 @@
+<div id="wishlist-page-root" class="wishlist-page">
+  <h1 class="wishlist-page__title">{{ block.settings.heading | default: 'My Wishlist' }}</h1>
+  <div id="wishlist-page-grid" class="wishlist-grid" data-loading-text="{{ block.settings.loading_text | default: 'Loading your wishlist...' }}" data-empty-text="{{ block.settings.empty_text | default: 'Your wishlist is empty. Tap the heart icon on any product to save it here.' }}">
+    <p class="wishlist-grid__loading">{{ block.settings.loading_text | default: 'Loading your wishlist...' }}</p>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Wishlist Page",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "My Wishlist"
+    },
+    {
+      "type": "text",
+      "id": "empty_text",
+      "label": "Empty state text",
+      "default": "Your wishlist is empty. Tap the heart icon on any product to save it here."
+    },
+    {
+      "type": "text",
+      "id": "loading_text",
+      "label": "Loading text",
+      "default": "Loading your wishlist..."
+    }
+  ]
+}
+{% endschema %}
