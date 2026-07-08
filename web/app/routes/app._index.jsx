@@ -1,6 +1,16 @@
-import { useLoaderData } from "@remix-run/react";
-import { Page, Layout, Card, BlockStack, Text, InlineGrid } from "@shopify/polaris";
-import { authenticate } from "../shopify.server";
+import { useLoaderData, useFetcher } from "@remix-run/react";
+import {
+  Page,
+  Layout,
+  Card,
+  BlockStack,
+  InlineStack,
+  Text,
+  Button,
+  Banner,
+  InlineGrid,
+} from "@shopify/polaris";
+import { authenticate, createWishlistPage } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }) => {
@@ -24,19 +34,80 @@ export const loader = async ({ request }) => {
   // Total wishlist "adds" (rows), useful as a secondary stat
   const totalItems = await prisma.wishlistItem.count({ where: { shop } });
 
+  const settings = await prisma.shopSettings.upsert({
+    where: { shop },
+    update: {},
+    create: { shop, enabled: true },
+  });
+
   return {
     totalUsers: distinctUsers.length,
     totalProducts: distinctProducts.length,
     totalItems,
+    wishlistPageUrl: settings.wishlistPageUrl || null,
   };
 };
 
+export const action = async ({ request }) => {
+  const { session } = await authenticate.admin(request);
+  try {
+    const result = await createWishlistPage(session);
+    return { ok: true, pageUrl: result?.pageUrl, blockAdded: !!result?.blockAdded };
+  } catch (error) {
+    return { ok: false, error: error.message || "Something went wrong." };
+  }
+};
+
 export default function Dashboard() {
-  const { totalUsers, totalProducts, totalItems } = useLoaderData();
+  const { totalUsers, totalProducts, totalItems, wishlistPageUrl } =
+    useLoaderData();
+  const fetcher = useFetcher();
+  const isCreating = fetcher.state !== "idle";
+  const result = fetcher.data;
+  const pageUrl = result?.ok ? result.pageUrl : wishlistPageUrl;
 
   return (
     <Page title="Dashboard">
       <Layout>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">
+                Wishlist page
+              </Text>
+              {pageUrl ? (
+                <Text as="p" tone="subdued">
+                  Your storefront wishlist page is live at{" "}
+                  <Text as="span" fontWeight="semibold">
+                    {pageUrl}
+                  </Text>
+                  . The header heart icon on your storefront links here.
+                </Text>
+              ) : (
+                <Text as="p" tone="subdued">
+                  No wishlist page yet — create one so the header heart icon
+                  has somewhere to link to.
+                </Text>
+              )}
+              {result && !result.ok && (
+                <Banner tone="critical">{result.error}</Banner>
+              )}
+              {result?.ok && !result.blockAdded && (
+                <Banner tone="warning">
+                  Page created, but the wishlist block could not be added to
+                  your theme automatically. Open the theme editor, open the
+                  Wishlist page template, and add the "Wishlist Page" app
+                  block manually.
+                </Banner>
+              )}
+              <InlineStack gap="300">
+                <Button onClick={() => fetcher.submit({}, { method: "post" })} loading={isCreating}>
+                  {pageUrl ? "Re-create / repair wishlist page" : "Create Wishlist Page"}
+                </Button>
+              </InlineStack>
+            </BlockStack>
+          </Card>
+        </Layout.Section>
         <Layout.Section>
           <InlineGrid columns={{ xs: 1, sm: 3 }} gap="400">
             <Card>

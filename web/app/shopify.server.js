@@ -38,7 +38,7 @@ const shopify = shopifyApp({
   },
 });
 
-async function createWishlistPage(session) {
+export async function createWishlistPage(session) {
   const client = new shopify.api.clients.Graphql({ session });
 
   const createPageResponse = await client.request(
@@ -68,7 +68,10 @@ async function createWishlistPage(session) {
   );
 
   const handle = page?.handle || (handleTakenError ? "wishlist" : null);
-  if (!handle) return;
+  if (!handle) {
+    const message = userErrors[0]?.message || "Could not create the page.";
+    throw new Error(message);
+  }
 
   const pageUrl = `/pages/${handle}`;
 
@@ -77,11 +80,14 @@ async function createWishlistPage(session) {
     data: { wishlistPageUrl: pageUrl },
   });
 
+  let blockAdded = false;
   try {
-    await addAppBlockToPageTemplate(client);
+    blockAdded = await addAppBlockToPageTemplate(client);
   } catch (error) {
     console.error("Could not auto-add app block to theme:", error);
   }
+
+  return { pageUrl, blockAdded };
 }
 
 async function addAppBlockToPageTemplate(client) {
@@ -124,7 +130,7 @@ async function addAppBlockToPageTemplate(client) {
   const alreadyAdded = Object.values(mainSection.blocks).some((block) =>
     block.type?.includes("wishlist-page"),
   );
-  if (alreadyAdded) return;
+  if (alreadyAdded) return true;
 
   const blockKey = "wishlist_page_block";
   mainSection.blocks[blockKey] = {
@@ -133,7 +139,7 @@ async function addAppBlockToPageTemplate(client) {
   };
   mainSection.block_order.push(blockKey);
 
-  await client.request(
+  const updateResponse = await client.request(
     `#graphql
     mutation UpdateTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
       themeFilesUpsert(themeId: $themeId, files: $files) {
@@ -155,6 +161,12 @@ async function addAppBlockToPageTemplate(client) {
       },
     },
   );
+
+  const updateErrors = updateResponse.data?.themeFilesUpsert?.userErrors || [];
+  if (updateErrors.length) {
+    throw new Error(updateErrors[0].message);
+  }
+  return true;
 }
 
 export default shopify;
