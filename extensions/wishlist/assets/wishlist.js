@@ -330,9 +330,7 @@
     var container = document.createElement("div");
     container.id = "wishlist-page-root";
     container.className = "wishlist-page";
-    container.innerHTML =
-      '<h1 class="wishlist-page__title">My Wishlist</h1>' +
-      '<div id="wishlist-page-grid" class="wishlist-grid"></div>';
+    container.innerHTML = '<div id="wishlist-page-grid" class="wishlist-grid"></div>';
 
     var main =
       document.querySelector("main#MainContent") ||
