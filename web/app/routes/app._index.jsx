@@ -49,9 +49,9 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   try {
-    const result = await createWishlistPage(session);
+    const result = await createWishlistPage(admin, session.shop);
     return { ok: true, pageUrl: result?.pageUrl, blockAdded: !!result?.blockAdded };
   } catch (error) {
     return { ok: false, error: error.message || "Something went wrong." };

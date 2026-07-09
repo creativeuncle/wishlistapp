@@ -29,7 +29,8 @@ const shopify = shopifyApp({
 
       if (!settings.wishlistPageUrl) {
         try {
-          await createWishlistPage(session);
+          const { admin } = await shopify.unauthenticated.admin(session.shop);
+          await createWishlistPage(admin, session.shop);
         } catch (error) {
           console.error("Could not auto-create wishlist page:", error);
         }
@@ -38,10 +39,10 @@ const shopify = shopifyApp({
   },
 });
 
-export async function createWishlistPage(session) {
-  const client = new shopify.api.clients.Graphql({ session });
-
-  const createPageResponse = await client.request(
+// `admin` is the GraphQL client returned by `authenticate.admin(request)` or
+// `unauthenticated.admin(shop)` - both expose `.graphql(query, options)`.
+export async function createWishlistPage(admin, shop) {
+  const createPageResponse = await admin.graphql(
     `#graphql
     mutation CreateWishlistPage($page: PageCreateInput!) {
       pageCreate(page: $page) {
@@ -60,9 +61,10 @@ export async function createWishlistPage(session) {
       },
     },
   );
+  const createPageJson = await createPageResponse.json();
 
-  const page = createPageResponse.data?.pageCreate?.page;
-  const userErrors = createPageResponse.data?.pageCreate?.userErrors || [];
+  const page = createPageJson.data?.pageCreate?.page;
+  const userErrors = createPageJson.data?.pageCreate?.userErrors || [];
   const handleTakenError = userErrors.find((e) =>
     e.message?.toLowerCase().includes("handle"),
   );
@@ -76,13 +78,13 @@ export async function createWishlistPage(session) {
   const pageUrl = `/pages/${handle}`;
 
   await prisma.shopSettings.update({
-    where: { shop: session.shop },
+    where: { shop },
     data: { wishlistPageUrl: pageUrl },
   });
 
   let blockAdded = false;
   try {
-    blockAdded = await addAppBlockToPageTemplate(client);
+    blockAdded = await addAppBlockToPageTemplate(admin);
   } catch (error) {
     console.error("Could not auto-add app block to theme:", error);
   }
@@ -90,8 +92,8 @@ export async function createWishlistPage(session) {
   return { pageUrl, blockAdded };
 }
 
-async function addAppBlockToPageTemplate(client) {
-  const themeResponse = await client.request(
+async function addAppBlockToPageTemplate(admin) {
+  const themeResponse = await admin.graphql(
     `#graphql
     query ActiveTheme {
       themes(first: 1, roles: [MAIN]) {
@@ -99,10 +101,11 @@ async function addAppBlockToPageTemplate(client) {
       }
     }`,
   );
-  const themeId = themeResponse.data?.themes?.nodes?.[0]?.id;
+  const themeJson = await themeResponse.json();
+  const themeId = themeJson.data?.themes?.nodes?.[0]?.id;
   if (!themeId) return;
 
-  const assetResponse = await client.request(
+  const assetResponse = await admin.graphql(
     `#graphql
     query ThemeAsset($id: ID!, $filename: String!) {
       theme(id: $id) {
@@ -113,8 +116,9 @@ async function addAppBlockToPageTemplate(client) {
     }`,
     { variables: { id: themeId, filename: "templates/page.json" } },
   );
+  const assetJson = await assetResponse.json();
 
-  const fileNode = assetResponse.data?.theme?.files?.nodes?.[0];
+  const fileNode = assetJson.data?.theme?.files?.nodes?.[0];
   if (!fileNode?.body?.content) return;
 
   const templateJson = JSON.parse(fileNode.body.content);
@@ -139,7 +143,7 @@ async function addAppBlockToPageTemplate(client) {
   };
   mainSection.block_order.push(blockKey);
 
-  const updateResponse = await client.request(
+  const updateResponse = await admin.graphql(
     `#graphql
     mutation UpdateTemplate($themeId: ID!, $files: [OnlineStoreThemeFilesUpsertFileInput!]!) {
       themeFilesUpsert(themeId: $themeId, files: $files) {
@@ -161,8 +165,9 @@ async function addAppBlockToPageTemplate(client) {
       },
     },
   );
+  const updateJson = await updateResponse.json();
 
-  const updateErrors = updateResponse.data?.themeFilesUpsert?.userErrors || [];
+  const updateErrors = updateJson.data?.themeFilesUpsert?.userErrors || [];
   if (updateErrors.length) {
     throw new Error(updateErrors[0].message);
   }
