@@ -52,7 +52,7 @@ export const action = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
   try {
     const result = await createWishlistPage(admin, session.shop);
-    return { ok: true, pageUrl: result?.pageUrl, blockAdded: !!result?.blockAdded };
+    return { ok: true, pageUrl: result?.pageUrl };
   } catch (error) {
     return { ok: false, error: error.message || "Something went wrong." };
   }
@@ -81,7 +81,9 @@ export default function Dashboard() {
                   <Text as="span" fontWeight="semibold">
                     {pageUrl}
                   </Text>
-                  . The header heart icon on your storefront links here.
+                  . The header heart icon on your storefront links here, and
+                  the products grid is injected automatically — no theme
+                  editing needed.
                 </Text>
               ) : (
                 <Text as="p" tone="subdued">
@@ -92,19 +94,13 @@ export default function Dashboard() {
               {result && !result.ok && (
                 <Banner tone="critical">{result.error}</Banner>
               )}
-              {result?.ok && !result.blockAdded && (
-                <Banner tone="warning">
-                  Page created, but the wishlist block could not be added to
-                  your theme automatically. Open the theme editor, open the
-                  Wishlist page template, and add the "Wishlist Page" app
-                  block manually.
-                </Banner>
+              {!pageUrl && (
+                <InlineStack gap="300">
+                  <Button onClick={() => fetcher.submit({}, { method: "post" })} loading={isCreating}>
+                    Create Wishlist Page
+                  </Button>
+                </InlineStack>
               )}
-              <InlineStack gap="300">
-                <Button onClick={() => fetcher.submit({}, { method: "post" })} loading={isCreating}>
-                  {pageUrl ? "Re-create / repair wishlist page" : "Create Wishlist Page"}
-                </Button>
-              </InlineStack>
             </BlockStack>
           </Card>
         </Layout.Section>

@@ -69,14 +69,13 @@ wishlist-app/
    ```
    Ye tumhe app install karne ka link dega — apne dev store par install
    karte hi seedha Dashboard khul jayega.
-6. Store ke **Theme editor** me jaake:
-   - **App embeds** section me "Wishlist" ko ON karo (hearts + header icon
-     ke liye).
-   - Ek naya page banao (e.g. "Wishlist"), us page ke template me
-     **"Wishlist Page" app block** add karo — ye wahi page hai jispar header
-     wala heart icon click karne par jaana chahiye. Uska URL
-     `wishlist-embed` block ki setting "Wishlist page URL" me daal do
-     (default `/pages/wishlist`).
+6. Store ke **Theme editor** me sirf ek cheez karni hai: **App embeds**
+   section me "Wishlist" ko ON karo (hearts + header icon ke liye) — ye
+   ek-baar ka global toggle hai, kisi specific page pe kuch add nahi karna.
+   Wishlist page (`/pages/wishlist`) app install hote hi Admin API se khud
+   ban jaata hai (ya Dashboard ke "Create Wishlist Page" button se), aur
+   uska product grid bhi storefront JS khud inject kar deta hai — kisi bhi
+   page/template me manually app block add karne ki zaroorat nahi.
 
 ## Important note (limitation)
 

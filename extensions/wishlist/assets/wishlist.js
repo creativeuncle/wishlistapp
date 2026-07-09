@@ -312,11 +312,41 @@
     });
   }
 
+  function normalizePath(path) {
+    if (!path) return "";
+    var withoutQuery = path.split("?")[0].split("#")[0];
+    return withoutQuery.replace(/\/+$/, "").toLowerCase();
+  }
+
+  // If we're on the configured wishlist page and no "Wishlist Page" app
+  // block was manually added to the template, build the grid markup
+  // ourselves - so merchants never have to touch the theme editor.
+  function injectWishlistPageIfNeeded() {
+    if (document.getElementById("wishlist-page-grid")) return;
+    if (normalizePath(window.location.pathname) !== normalizePath(WISHLIST_PAGE_URL)) {
+      return;
+    }
+
+    var container = document.createElement("div");
+    container.id = "wishlist-page-root";
+    container.className = "wishlist-page";
+    container.innerHTML =
+      '<h1 class="wishlist-page__title">My Wishlist</h1>' +
+      '<div id="wishlist-page-grid" class="wishlist-grid"></div>';
+
+    var main =
+      document.querySelector("main#MainContent") ||
+      document.querySelector("main") ||
+      document.body;
+    main.insertBefore(container, main.firstChild);
+  }
+
   function init() {
     loadStatusAndItems().then(function () {
       if (!state.enabled) return;
       injectHearts();
       injectHeaderIcon();
+      injectWishlistPageIfNeeded();
       renderWishlistPage();
 
       // Re-scan when the theme injects new product markup dynamically
