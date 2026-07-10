@@ -81,6 +81,23 @@
       });
   }
 
+  var toastTimer = null;
+  function showToast(message) {
+    var toast = document.getElementById("wishlist-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "wishlist-toast";
+      toast.className = "wishlist-toast";
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.add("is-visible");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () {
+      toast.classList.remove("is-visible");
+    }, 3000);
+  }
+
   function toggleWishlist(handle, btn) {
     btn.classList.add("is-loading");
     getShopifyProductId(handle)
@@ -97,6 +114,7 @@
         state.items = data.items || [];
         refreshAllHearts();
         updateHeaderCount();
+        if (data.added) showToast("Product Added to Wishlist");
       })
       .catch(function () {
         /* silently ignore - button state stays unchanged */
@@ -303,9 +321,41 @@
           });
       });
 
+      var addToCartBtn = document.createElement("button");
+      addToCartBtn.type = "button";
+      addToCartBtn.className = "wishlist-card__add-to-cart-btn";
+      addToCartBtn.textContent = "Add to Cart";
+      if (!item.variantId) {
+        addToCartBtn.disabled = true;
+      } else {
+        addToCartBtn.addEventListener("click", function () {
+          addToCartBtn.disabled = true;
+          var variantNumericId = item.variantId.split("/").pop();
+          fetch("/cart/add.js", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              items: [{ id: variantNumericId, quantity: 1 }],
+            }),
+          })
+            .then(function (r) {
+              if (!r.ok) throw new Error("add_to_cart_failed");
+              addToCartBtn.textContent = "Added!";
+              setTimeout(function () {
+                addToCartBtn.textContent = "Add to Cart";
+                addToCartBtn.disabled = false;
+              }, 1500);
+            })
+            .catch(function () {
+              addToCartBtn.disabled = false;
+            });
+        });
+      }
+
       body.appendChild(titleLink);
       if (item.price) body.appendChild(price);
       body.appendChild(removeBtn);
+      body.appendChild(addToCartBtn);
       card.appendChild(img);
       card.appendChild(body);
       grid.appendChild(card);
