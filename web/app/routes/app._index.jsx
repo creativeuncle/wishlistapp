@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
@@ -116,6 +116,28 @@ export default function Dashboard() {
   const pageUrl = result?.ok ? result.pageUrl : wishlistPageUrl;
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportCsv = useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const response = await fetch("/app/export-csv");
+      if (!response.ok) throw new Error("export_failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wishlist-export-${Date.now()}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      /* silently ignore - the button just stops loading */
+    } finally {
+      setIsExporting(false);
+    }
+  }, []);
 
   return (
     <Page title="Dashboard">
@@ -226,7 +248,7 @@ export default function Dashboard() {
                 <Text as="h2" variant="headingMd">
                   Most wishlisted products
                 </Text>
-                <Button url="/app/export-csv" target="_blank">
+                <Button onClick={handleExportCsv} loading={isExporting}>
                   Export CSV
                 </Button>
               </InlineStack>
