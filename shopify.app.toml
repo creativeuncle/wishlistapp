@@ -22,6 +22,10 @@ api_version = "2024-10"
   topics = [ "app/uninstalled" ]
   uri = "/webhooks/app/uninstalled"
 
+  [[webhooks.subscriptions]]
+  topics = [ "products/update" ]
+  uri = "/webhooks/products/update"
+
 [app_proxy]
 url = "https://REPLACE_WITH_YOUR_APP_URL/proxy"
 subpath = "wishlist"

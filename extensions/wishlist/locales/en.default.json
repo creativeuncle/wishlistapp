@@ -9,6 +9,9 @@
     "toast_added": "Product Added to Wishlist",
     "empty": "Your wishlist is empty. Tap the heart icon on any product to save it here.",
     "unavailable": "Wishlist is currently unavailable.",
-    "loading": "Loading your wishlist..."
+    "loading": "Loading your wishlist...",
+    "share_button": "Share Wishlist",
+    "link_copied": "Link copied!",
+    "viewing_shared": "You're viewing a shared wishlist."
   }
 }

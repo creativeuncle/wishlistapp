@@ -107,6 +107,28 @@
   margin-bottom: 24px;
 }
 
+.wishlist-share-btn {
+  display: inline-block;
+  margin-bottom: 20px;
+  border: 1px solid #111;
+  background: #fff;
+  color: #111;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.wishlist-share-btn:hover {
+  background: #f7f7f7;
+}
+
+.wishlist-shared-banner {
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 14px;
+}
+
 .wishlist-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

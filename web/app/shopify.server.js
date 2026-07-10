@@ -137,11 +137,11 @@ export async function getAppEmbedStatus(admin, shop) {
   }
 }
 
-// Pushes an "Added to Wishlist" event to Klaviyo for a logged-in customer,
-// so the merchant can build discount/reminder flows in Klaviyo themselves.
-// No-ops silently if the shop hasn't set a Klaviyo Private API Key, or if
-// the wishlist item belongs to a guest (no email to identify them by).
-export async function sendKlaviyoWishlistEvent(shop, customerId, item) {
+// Pushes an event to Klaviyo for a logged-in customer, so the merchant can
+// build discount/reminder flows in Klaviyo themselves. No-ops silently if
+// the shop hasn't set a Klaviyo Private API Key, or if the wishlist item
+// belongs to a guest (no email to identify them by).
+async function sendKlaviyoEvent(shop, customerId, metricName, properties) {
   if (!customerId.startsWith("customer_")) return;
 
   const settings = await prisma.shopSettings.findUnique({ where: { shop } });
@@ -173,25 +173,35 @@ export async function sendKlaviyoWishlistEvent(shop, customerId, item) {
         data: {
           type: "event",
           attributes: {
-            properties: {
-              ProductTitle: item.productTitle,
-              ProductHandle: item.productHandle,
-              Price: item.price,
-            },
-            metric: {
-              data: {
-                type: "metric",
-                attributes: { name: "Added to Wishlist" },
-              },
-            },
+            properties,
+            metric: { data: { type: "metric", attributes: { name: metricName } } },
             profile: { data: { type: "profile", attributes: { email } } },
           },
         },
       }),
     });
   } catch (error) {
-    console.error("Could not send Klaviyo wishlist event:", error);
+    console.error(`Could not send Klaviyo "${metricName}" event:`, error);
   }
+}
+
+export async function sendKlaviyoWishlistEvent(shop, customerId, item) {
+  return sendKlaviyoEvent(shop, customerId, "Added to Wishlist", {
+    ProductTitle: item.productTitle,
+    ProductHandle: item.productHandle,
+    Price: item.price,
+  });
+}
+
+// Called from the products/update webhook when a wishlisted product's price
+// drops or it comes back in stock, so merchants can build a Klaviyo flow
+// that emails the customer about it.
+export async function sendKlaviyoProductAlertEvent(shop, customerId, metricName, item) {
+  return sendKlaviyoEvent(shop, customerId, metricName, {
+    ProductTitle: item.productTitle,
+    ProductHandle: item.productHandle,
+    Price: item.price,
+  });
 }
 
 export default shopify;

@@ -37,6 +37,7 @@ model WishlistItem {
   productTitle   String
   productImage   String?
   price          String?
+  available      Boolean  @default(true) // last known stock status, used to detect back-in-stock
   createdAt      DateTime @default(now())
 
   @@unique([shop, customerId, productId, variantId])

@@ -105,9 +105,25 @@ fine-tune kar sakte hain.
   example ke taur par add kiya hai. Naye language ke liye bas ek naya
   `<locale>.json` file add karo.
 
+## Ab tak kya extend ho chuka hai (Step 3)
+
+- **Guest → Customer merge** — agar koi customer pehle bina login ke
+  wishlist banata hai (guest ID `localStorage` me), aur baad me login karta
+  hai, us guest ki wishlist automatically uske account wishlist me merge ho
+  jaati hai (page load pe ek baar).
+- **Share Wishlist** — wishlist page par "Share Wishlist" button hai, jo
+  click karne par ek shareable link (`?share=<id>`) copy kar deta hai. Wo
+  link kholne wala koi bhi (login ke bina) us customer ki wishlist read-only
+  dekh sakta hai — "Remove" button nahi dikhta, gifting ke liye useful.
+- **Back-in-stock / price-drop alerts** — app `products/update` webhook
+  subscribe karta hai. Jab kisi wishlisted product ka price gire ya wo
+  wapas stock me aaye, us customer ke liye Klaviyo par "Wishlist Price
+  Drop" / "Wishlist Back In Stock" event chala jaata hai (Klaviyo key
+  Settings me set hona zaroori hai) — us event par email flow bana sakte ho.
+
 ## Next steps (jab bologe extend karenge)
 
-- Guest wishlist ko customer login hone par merge karna
 - Wishlist se variant selector (size/color) Add to Cart se pehle
-- Back-in-stock / price-drop alerts
-- Shareable public wishlist link
+- Order history se automatically wishlist se hata dena jab customer wo
+  product khareed le
+- CSV import (dusre wishlist app se migrate karne ke liye)

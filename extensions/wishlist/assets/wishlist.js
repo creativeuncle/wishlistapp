@@ -25,7 +25,16 @@
     toastAdded: configEl.getAttribute("data-i18n-toast-added") || "Product Added to Wishlist",
     empty: configEl.getAttribute("data-i18n-empty") || "Your wishlist is empty.",
     unavailable: configEl.getAttribute("data-i18n-unavailable") || "Wishlist is currently unavailable.",
+    shareButton: configEl.getAttribute("data-i18n-share-button") || "Share Wishlist",
+    linkCopied: configEl.getAttribute("data-i18n-link-copied") || "Link copied!",
+    viewingShared: configEl.getAttribute("data-i18n-viewing-shared") || "You're viewing a shared wishlist.",
   };
+
+  // A wishlist page URL like /pages/wishlist?share=customer_123 shows that
+  // customer's wishlist read-only, so it can be shared for gifting.
+  var SHARE_CUSTOMER_ID = new URLSearchParams(window.location.search).get(
+    "share"
+  );
 
   function getCustomerId() {
     if (CUSTOMER_ID_RAW) return "customer_" + CUSTOMER_ID_RAW;
@@ -43,6 +52,7 @@
     enabled: true,
     items: [], // wishlist rows from the server for this customer
   };
+  var pageItems = []; // items to render on the wishlist page (own or shared)
 
   function productIdsSet() {
     var set = {};
@@ -59,6 +69,23 @@
     });
   }
 
+  // If a logged-in customer still has a guest wishlist saved from before
+  // they signed in, merge it into their account wishlist once.
+  function mergeGuestWishlistIfNeeded() {
+    if (!CUSTOMER_ID_RAW) return Promise.resolve();
+    var guestId = localStorage.getItem("wishlist_guest_id");
+    if (!guestId) return Promise.resolve();
+    return fetchJSON(PROXY_BASE + "/merge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ guestId: guestId, customerId: customerId }),
+    })
+      .then(function () {
+        localStorage.removeItem("wishlist_guest_id");
+      })
+      .catch(function () {});
+  }
+
   function loadStatusAndItems() {
     return fetchJSON(PROXY_BASE + "/status")
       .then(function (data) {
@@ -67,9 +94,11 @@
         state.enabled = !!data.enabled;
         if (data.wishlistPageUrl) WISHLIST_PAGE_URL = data.wishlistPageUrl;
         if (!state.enabled) return { items: [] };
-        return fetchJSON(
-          PROXY_BASE + "/items?customerId=" + encodeURIComponent(customerId)
-        );
+        return mergeGuestWishlistIfNeeded().then(function () {
+          return fetchJSON(
+            PROXY_BASE + "/items?customerId=" + encodeURIComponent(customerId)
+          );
+        });
       })
       .then(function (data) {
         state.items = data.items || [];
@@ -127,6 +156,7 @@
       })
       .then(function (data) {
         state.items = data.items || [];
+        if (!SHARE_CUSTOMER_ID) pageItems = state.items;
         refreshAllHearts();
         updateHeaderCount();
         if (data.added) showToast(I18N.toastAdded);
@@ -272,9 +302,49 @@
   }
 
   // ---------- Wishlist page grid ----------
+
+  // Lets the owner copy a link to their own wishlist page (?share=<id>) so
+  // it can be viewed read-only by anyone with the link, e.g. for gifting.
+  function injectShareButton(grid) {
+    if (SHARE_CUSTOMER_ID) return;
+    if (document.getElementById("wishlist-share-btn")) return;
+
+    var btn = document.createElement("button");
+    btn.id = "wishlist-share-btn";
+    btn.type = "button";
+    btn.className = "wishlist-share-btn";
+    btn.textContent = I18N.shareButton;
+    btn.addEventListener("click", function () {
+      var shareUrl =
+        window.location.origin +
+        WISHLIST_PAGE_URL +
+        "?share=" +
+        encodeURIComponent(customerId);
+      var done = function () {
+        showToast(I18N.linkCopied);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(shareUrl).then(done, done);
+      } else {
+        done();
+      }
+    });
+    grid.parentNode.insertBefore(btn, grid);
+  }
+
   function renderWishlistPage() {
     var grid = document.getElementById("wishlist-page-grid");
     if (!grid) return;
+
+    injectShareButton(grid);
+
+    if (SHARE_CUSTOMER_ID && !document.getElementById("wishlist-shared-banner")) {
+      var banner = document.createElement("p");
+      banner.id = "wishlist-shared-banner";
+      banner.className = "wishlist-shared-banner";
+      banner.textContent = I18N.viewingShared;
+      grid.parentNode.insertBefore(banner, grid);
+    }
 
     if (!state.enabled) {
       grid.innerHTML = '<p class="wishlist-grid__empty"></p>';
@@ -282,7 +352,7 @@
       return;
     }
 
-    if (state.items.length === 0) {
+    if (pageItems.length === 0) {
       var emptyText = grid.dataset.emptyText || I18N.empty;
       grid.innerHTML = '<p class="wishlist-grid__empty"></p>';
       grid.querySelector(".wishlist-grid__empty").textContent = emptyText;
@@ -290,7 +360,7 @@
     }
 
     grid.innerHTML = "";
-    state.items.forEach(function (item) {
+    pageItems.forEach(function (item) {
       var card = document.createElement("div");
       card.className = "wishlist-card";
 
@@ -311,31 +381,35 @@
       price.className = "wishlist-card__price";
       if (item.price) price.textContent = "$" + item.price;
 
-      var removeBtn = document.createElement("button");
-      removeBtn.type = "button";
-      removeBtn.className = "wishlist-card__remove-btn";
-      removeBtn.textContent = I18N.removeButton;
-      removeBtn.addEventListener("click", function () {
-        removeBtn.disabled = true;
-        fetchJSON(PROXY_BASE + "/remove", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerId: customerId,
-            productId: item.productId,
-            variantId: item.variantId,
-          }),
-        })
-          .then(function (data) {
-            state.items = data.items || [];
-            renderWishlistPage();
-            refreshAllHearts();
-            updateHeaderCount();
+      var removeBtn = null;
+      if (!SHARE_CUSTOMER_ID) {
+        removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "wishlist-card__remove-btn";
+        removeBtn.textContent = I18N.removeButton;
+        removeBtn.addEventListener("click", function () {
+          removeBtn.disabled = true;
+          fetchJSON(PROXY_BASE + "/remove", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              customerId: customerId,
+              productId: item.productId,
+              variantId: item.variantId,
+            }),
           })
-          .catch(function () {
-            removeBtn.disabled = false;
-          });
-      });
+            .then(function (data) {
+              state.items = data.items || [];
+              pageItems = state.items;
+              renderWishlistPage();
+              refreshAllHearts();
+              updateHeaderCount();
+            })
+            .catch(function () {
+              removeBtn.disabled = false;
+            });
+        });
+      }
 
       var addToCartBtn = document.createElement("button");
       addToCartBtn.type = "button";
@@ -370,12 +444,28 @@
 
       body.appendChild(titleLink);
       if (item.price) body.appendChild(price);
-      body.appendChild(removeBtn);
+      if (removeBtn) body.appendChild(removeBtn);
       body.appendChild(addToCartBtn);
       card.appendChild(img);
       card.appendChild(body);
       grid.appendChild(card);
     });
+  }
+
+  function loadPageItems() {
+    if (SHARE_CUSTOMER_ID) {
+      return fetchJSON(
+        PROXY_BASE + "/items?customerId=" + encodeURIComponent(SHARE_CUSTOMER_ID)
+      )
+        .then(function (data) {
+          pageItems = data.items || [];
+        })
+        .catch(function () {
+          pageItems = [];
+        });
+    }
+    pageItems = state.items;
+    return Promise.resolve();
   }
 
   function normalizePath(path) {
@@ -420,7 +510,7 @@
       injectHearts();
       injectHeaderIcon();
       injectWishlistPageIfNeeded();
-      renderWishlistPage();
+      loadPageItems().then(renderWishlistPage);
 
       // Re-scan when the theme injects new product markup dynamically
       // (infinite scroll, quick-view modals, filter/sort re-renders).

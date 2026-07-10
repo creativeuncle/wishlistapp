@@ -143,5 +143,52 @@ export const action = async ({ request }) => {
     return json({ items });
   }
 
+  // Folds a guest's wishlist (built up before they logged in) into their
+  // customer wishlist, once, the first time they load the storefront while
+  // signed in with a leftover guest id still in localStorage.
+  if (segment === "merge" && request.method === "POST") {
+    const body = await request.json();
+    const { guestId, customerId } = body;
+    if (
+      !guestId ||
+      !customerId ||
+      !guestId.startsWith("guest_") ||
+      !customerId.startsWith("customer_")
+    ) {
+      return json({ error: "invalid_ids" }, { status: 400 });
+    }
+
+    const guestItems = await prisma.wishlistItem.findMany({
+      where: { shop, customerId: guestId },
+    });
+
+    for (const item of guestItems) {
+      const existing = await prisma.wishlistItem.findUnique({
+        where: {
+          shop_customerId_productId_variantId: {
+            shop,
+            customerId,
+            productId: item.productId,
+            variantId: item.variantId,
+          },
+        },
+      });
+      if (existing) {
+        await prisma.wishlistItem.delete({ where: { id: item.id } });
+      } else {
+        await prisma.wishlistItem.update({
+          where: { id: item.id },
+          data: { customerId },
+        });
+      }
+    }
+
+    const items = await prisma.wishlistItem.findMany({
+      where: { shop, customerId },
+      orderBy: { createdAt: "desc" },
+    });
+    return json({ items });
+  }
+
   return json({ error: "not_found" }, { status: 404 });
 };
