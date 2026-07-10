@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
@@ -17,22 +18,31 @@ export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
   const shop = session.shop;
 
-  // Total distinct users (customers) who have at least one wishlist item
-  const distinctUsers = await prisma.wishlistItem.findMany({
+  // Every wishlist item for this shop, used to derive all the stats below
+  const items = await prisma.wishlistItem.findMany({
     where: { shop },
-    distinct: ["customerId"],
-    select: { customerId: true },
+    select: { customerId: true, productId: true, price: true },
   });
 
-  // Total distinct products present in any wishlist for this shop
-  const distinctProducts = await prisma.wishlistItem.findMany({
-    where: { shop },
-    distinct: ["productId"],
-    select: { productId: true },
-  });
+  const wishlistsByCustomer = new Map();
+  const productIds = new Set();
+  let totalValue = 0;
 
-  // Total wishlist "adds" (rows), useful as a secondary stat
-  const totalItems = await prisma.wishlistItem.count({ where: { shop } });
+  for (const item of items) {
+    productIds.add(item.productId);
+    const price = parseFloat(item.price);
+    const value = Number.isFinite(price) ? price : 0;
+    totalValue += value;
+    wishlistsByCustomer.set(
+      item.customerId,
+      (wishlistsByCustomer.get(item.customerId) || 0) + value,
+    );
+  }
+
+  const totalWishlists = wishlistsByCustomer.size;
+  const averageWishlist = totalWishlists
+    ? totalValue / totalWishlists
+    : 0;
 
   const settings = await prisma.shopSettings.upsert({
     where: { shop },
@@ -41,9 +51,10 @@ export const loader = async ({ request }) => {
   });
 
   return {
-    totalUsers: distinctUsers.length,
-    totalProducts: distinctProducts.length,
-    totalItems,
+    totalWishlists,
+    totalProducts: productIds.size,
+    totalValue,
+    averageWishlist,
     wishlistPageUrl: settings.wishlistPageUrl || null,
   };
 };
@@ -59,12 +70,19 @@ export const action = async ({ request }) => {
 };
 
 export default function Dashboard() {
-  const { totalUsers, totalProducts, totalItems, wishlistPageUrl } =
-    useLoaderData();
+  const {
+    totalWishlists,
+    totalProducts,
+    totalValue,
+    averageWishlist,
+    wishlistPageUrl,
+  } = useLoaderData();
   const fetcher = useFetcher();
   const isCreating = fetcher.state !== "idle";
   const result = fetcher.data;
   const pageUrl = result?.ok ? result.pageUrl : wishlistPageUrl;
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
 
   return (
     <Page title="Dashboard">
@@ -105,14 +123,14 @@ export default function Dashboard() {
           </Card>
         </Layout.Section>
         <Layout.Section>
-          <InlineGrid columns={{ xs: 1, sm: 3 }} gap="400">
+          <InlineGrid columns={{ xs: 1, sm: 2, md: 4 }} gap="400">
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Total users using wishlist
+                  Wishlists
                 </Text>
                 <Text as="p" variant="heading2xl">
-                  {totalUsers}
+                  {totalWishlists}
                 </Text>
               </BlockStack>
             </Card>
@@ -120,7 +138,7 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Total products in wishlists
+                  Products
                 </Text>
                 <Text as="p" variant="heading2xl">
                   {totalProducts}
@@ -131,14 +149,67 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Total wishlist adds
+                  Total Value
                 </Text>
                 <Text as="p" variant="heading2xl">
-                  {totalItems}
+                  ${totalValue.toFixed(2)}
+                </Text>
+              </BlockStack>
+            </Card>
+
+            <Card>
+              <BlockStack gap="200">
+                <Text as="h3" variant="headingMd" tone="subdued">
+                  Average Wishlist
+                </Text>
+                <Text as="p" variant="heading2xl">
+                  ${averageWishlist.toFixed(2)}
                 </Text>
               </BlockStack>
             </Card>
           </InlineGrid>
+        </Layout.Section>
+        <Layout.Section>
+          <Card>
+            <InlineStack align="space-between" blockAlign="center" wrap gap="400">
+              <BlockStack gap="100">
+                <Text as="h3" variant="headingMd">
+                  How is your experience with the Wishlist?
+                </Text>
+                <Text as="p" tone="subdued">
+                  {rating
+                    ? "Thanks for rating us!"
+                    : "Rate us by clicking on the stars on the right."}
+                </Text>
+              </BlockStack>
+              <InlineStack gap="100">
+                {[1, 2, 3, 4, 5].map((value) => {
+                  const filled = value <= (hoverRating || rating);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setRating(value)}
+                      onMouseEnter={() => setHoverRating(value)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      aria-label={`Rate ${value} out of 5 stars`}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        fontSize: "28px",
+                        lineHeight: 1,
+                        color: filled ? "#ffa500" : "#d9d9d9",
+                      }}
+                    >
+                      {filled ? "★" : "☆"}
+                    </button>
+                  );
+                })}
+              </InlineStack>
+            </InlineStack>
+          </Card>
         </Layout.Section>
       </Layout>
     </Page>
