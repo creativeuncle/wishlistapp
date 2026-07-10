@@ -56,6 +56,7 @@ export const loader = async ({ request }) => {
     totalValue,
     averageWishlist,
     wishlistPageUrl: settings.wishlistPageUrl || null,
+    appStoreReviewUrl: process.env.APP_STORE_REVIEW_URL || null,
   };
 };
 
@@ -76,6 +77,7 @@ export default function Dashboard() {
     totalValue,
     averageWishlist,
     wishlistPageUrl,
+    appStoreReviewUrl,
   } = useLoaderData();
   const fetcher = useFetcher();
   const isCreating = fetcher.state !== "idle";
@@ -178,7 +180,9 @@ export default function Dashboard() {
                 </Text>
                 <Text as="p" tone="subdued">
                   {rating
-                    ? "Thanks for rating us!"
+                    ? appStoreReviewUrl
+                      ? "Thanks! Taking you to the Shopify App Store to leave your review…"
+                      : "Thanks for rating us!"
                     : "Rate us by clicking on the stars on the right."}
                 </Text>
               </BlockStack>
@@ -189,7 +193,12 @@ export default function Dashboard() {
                     <button
                       key={value}
                       type="button"
-                      onClick={() => setRating(value)}
+                      onClick={() => {
+                        setRating(value);
+                        if (appStoreReviewUrl) {
+                          window.open(appStoreReviewUrl, "_blank", "noopener");
+                        }
+                      }}
                       onMouseEnter={() => setHoverRating(value)}
                       onMouseLeave={() => setHoverRating(0)}
                       aria-label={`Rate ${value} out of 5 stars`}
