@@ -6,7 +6,7 @@ application_url = "https://REPLACE_WITH_YOUR_APP_URL"
 embedded = true
 
 [access_scopes]
-scopes = "read_products,read_customers,write_content"
+scopes = "read_products,read_customers,write_content,read_themes"
 
 [auth]
 redirect_urls = [

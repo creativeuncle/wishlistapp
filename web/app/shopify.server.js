@@ -85,6 +85,58 @@ export async function createWishlistPage(admin, shop) {
   return { pageUrl };
 }
 
+// The extension's uid from extensions/wishlist/shopify.extension.toml,
+// combined with the embed block's filename, identifies the "Wishlist"
+// app embed block for theme-editor deep links and settings_data.json checks.
+const APP_EMBED_ID = "234feb9f-8893-736d-284b-526fbb593a51121496b2/wishlist-embed";
+
+// Looks at the live theme's config/settings_data.json to see whether the
+// "Wishlist" app embed block has been switched on, and builds a deep link
+// straight into the theme editor's app-embeds panel so merchants don't have
+// to go hunt for it themselves.
+export async function getAppEmbedStatus(admin, shop) {
+  const themeResponse = await admin.graphql(
+    `#graphql
+    query ActiveTheme {
+      themes(first: 1, roles: [MAIN]) {
+        nodes { id }
+      }
+    }`,
+  );
+  const themeJson = await themeResponse.json();
+  const themeGid = themeJson.data?.themes?.nodes?.[0]?.id;
+  if (!themeGid) return { enabled: null, editorUrl: null };
+
+  const themeId = themeGid.split("/").pop();
+  const editorUrl = `https://${shop}/admin/themes/${themeId}/editor?context=apps&activateAppId=${APP_EMBED_ID}`;
+
+  const assetResponse = await admin.graphql(
+    `#graphql
+    query ThemeSettings($id: ID!) {
+      theme(id: $id) {
+        files(filenames: ["config/settings_data.json"]) {
+          nodes { body { ... on OnlineStoreThemeFileBodyText { content } } }
+        }
+      }
+    }`,
+    { variables: { id: themeGid } },
+  );
+  const assetJson = await assetResponse.json();
+  const content = assetJson.data?.theme?.files?.nodes?.[0]?.body?.content;
+  if (!content) return { enabled: null, editorUrl };
+
+  try {
+    const settings = JSON.parse(content);
+    const blocks = settings.current?.blocks || {};
+    const block = Object.values(blocks).find((b) =>
+      b.type?.includes("wishlist-embed"),
+    );
+    return { enabled: !!block && block.disabled !== true, editorUrl };
+  } catch {
+    return { enabled: null, editorUrl };
+  }
+}
+
 export default shopify;
 export const apiVersion = ApiVersion.October24;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;

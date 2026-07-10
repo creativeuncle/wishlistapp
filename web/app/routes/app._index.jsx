@@ -11,12 +11,17 @@ import {
   Banner,
   InlineGrid,
 } from "@shopify/polaris";
-import { authenticate, createWishlistPage } from "../shopify.server";
+import { authenticate, createWishlistPage, getAppEmbedStatus } from "../shopify.server";
 import prisma from "../db.server";
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const shop = session.shop;
+
+  const appEmbed = await getAppEmbedStatus(admin, shop).catch(() => ({
+    enabled: null,
+    editorUrl: null,
+  }));
 
   // Every wishlist item for this shop, used to derive all the stats below
   const items = await prisma.wishlistItem.findMany({
@@ -57,6 +62,8 @@ export const loader = async ({ request }) => {
     averageWishlist,
     wishlistPageUrl: settings.wishlistPageUrl || null,
     appStoreReviewUrl: process.env.APP_STORE_REVIEW_URL || null,
+    appEmbedEnabled: appEmbed.enabled,
+    appEmbedEditorUrl: appEmbed.editorUrl,
   };
 };
 
@@ -78,6 +85,8 @@ export default function Dashboard() {
     averageWishlist,
     wishlistPageUrl,
     appStoreReviewUrl,
+    appEmbedEnabled,
+    appEmbedEditorUrl,
   } = useLoaderData();
   const fetcher = useFetcher();
   const isCreating = fetcher.state !== "idle";
@@ -89,6 +98,23 @@ export default function Dashboard() {
   return (
     <Page title="Dashboard">
       <Layout>
+        {appEmbedEnabled === false && appEmbedEditorUrl && (
+          <Layout.Section>
+            <Banner
+              title="Wishlist isn't visible on your store yet"
+              tone="warning"
+              action={{
+                content: "Add Wishlist to your theme",
+                url: appEmbedEditorUrl,
+                target: "_top",
+              }}
+            >
+              <Text as="p">
+                Enable Wishlist in your theme editor and click save.
+              </Text>
+            </Banner>
+          </Layout.Section>
+        )}
         <Layout.Section>
           <Card>
             <BlockStack gap="300">
