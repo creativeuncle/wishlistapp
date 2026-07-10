@@ -332,11 +332,20 @@
     container.className = "wishlist-page";
     container.innerHTML = '<div id="wishlist-page-grid" class="wishlist-grid"></div>';
 
+    // The page body we create via the Admin API contains this placeholder,
+    // which the theme renders right after the page title - use it so the
+    // grid lands below the title instead of above it.
+    var placeholder = document.getElementById("wishlist-page-placeholder");
+    if (placeholder) {
+      placeholder.replaceWith(container);
+      return;
+    }
+
     var main =
       document.querySelector("main#MainContent") ||
       document.querySelector("main") ||
       document.body;
-    main.insertBefore(container, main.firstChild);
+    main.appendChild(container);
   }
 
   function init() {
