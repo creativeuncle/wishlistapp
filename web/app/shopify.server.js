@@ -137,6 +137,63 @@ export async function getAppEmbedStatus(admin, shop) {
   }
 }
 
+// Pushes an "Added to Wishlist" event to Klaviyo for a logged-in customer,
+// so the merchant can build discount/reminder flows in Klaviyo themselves.
+// No-ops silently if the shop hasn't set a Klaviyo Private API Key, or if
+// the wishlist item belongs to a guest (no email to identify them by).
+export async function sendKlaviyoWishlistEvent(shop, customerId, item) {
+  if (!customerId.startsWith("customer_")) return;
+
+  const settings = await prisma.shopSettings.findUnique({ where: { shop } });
+  if (!settings?.klaviyoApiKey) return;
+
+  try {
+    const { admin } = await shopify.unauthenticated.admin(shop);
+    const customerGid = `gid://shopify/Customer/${customerId.replace("customer_", "")}`;
+    const customerResponse = await admin.graphql(
+      `#graphql
+      query CustomerEmail($id: ID!) {
+        customer(id: $id) { email }
+      }`,
+      { variables: { id: customerGid } },
+    );
+    const customerJson = await customerResponse.json();
+    const email = customerJson.data?.customer?.email;
+    if (!email) return;
+
+    await fetch("https://a.klaviyo.com/api/events/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Klaviyo-API-Key ${settings.klaviyoApiKey}`,
+        revision: "2024-10-15",
+      },
+      body: JSON.stringify({
+        data: {
+          type: "event",
+          attributes: {
+            properties: {
+              ProductTitle: item.productTitle,
+              ProductHandle: item.productHandle,
+              Price: item.price,
+            },
+            metric: {
+              data: {
+                type: "metric",
+                attributes: { name: "Added to Wishlist" },
+              },
+            },
+            profile: { data: { type: "profile", attributes: { email } } },
+          },
+        },
+      }),
+    });
+  } catch (error) {
+    console.error("Could not send Klaviyo wishlist event:", error);
+  }
+}
+
 export default shopify;
 export const apiVersion = ApiVersion.October24;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;

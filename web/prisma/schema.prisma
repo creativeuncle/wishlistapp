@@ -51,5 +51,6 @@ model ShopSettings {
   shop            String   @unique
   enabled         Boolean  @default(true)
   wishlistPageUrl String?
+  klaviyoApiKey   String? // Klaviyo Private API Key, used to push "Added to Wishlist" events
   updatedAt       DateTime @updatedAt
 }

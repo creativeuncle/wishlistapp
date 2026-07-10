@@ -1,0 +1,14 @@
+{
+  "wishlist": {
+    "add_to_wishlist": "Add to wishlist",
+    "remove_from_wishlist": "Remove from wishlist",
+    "view_wishlist": "View wishlist",
+    "remove_button": "Remove from wishlist",
+    "add_to_cart_button": "Add to Cart",
+    "added_to_cart": "Added!",
+    "toast_added": "Product Added to Wishlist",
+    "empty": "Your wishlist is empty. Tap the heart icon on any product to save it here.",
+    "unavailable": "Wishlist is currently unavailable.",
+    "loading": "Loading your wishlist..."
+  }
+}

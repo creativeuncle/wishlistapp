@@ -26,15 +26,20 @@ export const loader = async ({ request }) => {
   // Every wishlist item for this shop, used to derive all the stats below
   const items = await prisma.wishlistItem.findMany({
     where: { shop },
-    select: { customerId: true, productId: true, price: true },
+    select: {
+      customerId: true,
+      productId: true,
+      price: true,
+      productTitle: true,
+      productImage: true,
+    },
   });
 
   const wishlistsByCustomer = new Map();
-  const productIds = new Set();
+  const productStats = new Map();
   let totalValue = 0;
 
   for (const item of items) {
-    productIds.add(item.productId);
     const price = parseFloat(item.price);
     const value = Number.isFinite(price) ? price : 0;
     totalValue += value;
@@ -42,12 +47,27 @@ export const loader = async ({ request }) => {
       item.customerId,
       (wishlistsByCustomer.get(item.customerId) || 0) + value,
     );
+
+    const existing = productStats.get(item.productId);
+    if (existing) {
+      existing.count += 1;
+    } else {
+      productStats.set(item.productId, {
+        count: 1,
+        title: item.productTitle,
+        image: item.productImage,
+      });
+    }
   }
 
   const totalWishlists = wishlistsByCustomer.size;
   const averageWishlist = totalWishlists
     ? totalValue / totalWishlists
     : 0;
+
+  const topProducts = [...productStats.values()]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 
   const settings = await prisma.shopSettings.upsert({
     where: { shop },
@@ -57,9 +77,10 @@ export const loader = async ({ request }) => {
 
   return {
     totalWishlists,
-    totalProducts: productIds.size,
+    totalProducts: productStats.size,
     totalValue,
     averageWishlist,
+    topProducts,
     wishlistPageUrl: settings.wishlistPageUrl || null,
     appStoreReviewUrl: process.env.APP_STORE_REVIEW_URL || null,
     appEmbedEnabled: appEmbed.enabled,
@@ -83,6 +104,7 @@ export default function Dashboard() {
     totalProducts,
     totalValue,
     averageWishlist,
+    topProducts,
     wishlistPageUrl,
     appStoreReviewUrl,
     appEmbedEnabled,
@@ -196,6 +218,64 @@ export default function Dashboard() {
               </BlockStack>
             </Card>
           </InlineGrid>
+        </Layout.Section>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <InlineStack align="space-between" blockAlign="center">
+                <Text as="h2" variant="headingMd">
+                  Most wishlisted products
+                </Text>
+                <Button url="/app/export-csv" target="_blank">
+                  Export CSV
+                </Button>
+              </InlineStack>
+              {topProducts.length === 0 ? (
+                <Text as="p" tone="subdued">
+                  No wishlist activity yet.
+                </Text>
+              ) : (
+                <BlockStack gap="200">
+                  {topProducts.map((product, index) => (
+                    <InlineStack
+                      key={product.title + index}
+                      align="space-between"
+                      blockAlign="center"
+                      gap="300"
+                    >
+                      <InlineStack gap="300" blockAlign="center">
+                        {product.image ? (
+                          <img
+                            src={product.image}
+                            alt={product.title}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              objectFit: "cover",
+                              borderRadius: 6,
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: 6,
+                              background: "#f1f1f1",
+                            }}
+                          />
+                        )}
+                        <Text as="span">{product.title}</Text>
+                      </InlineStack>
+                      <Text as="span" tone="subdued">
+                        {product.count} {product.count === 1 ? "wishlist" : "wishlists"}
+                      </Text>
+                    </InlineStack>
+                  ))}
+                </BlockStack>
+              )}
+            </BlockStack>
+          </Card>
         </Layout.Section>
         <Layout.Section>
           <Card>

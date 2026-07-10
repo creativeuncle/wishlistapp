@@ -1,4 +1,4 @@
-import { authenticate } from "../shopify.server";
+import { authenticate, sendKlaviyoWishlistEvent } from "../shopify.server";
 import prisma from "../db.server";
 
 // Helper: always return JSON with CORS-safe headers for the storefront fetch()
@@ -115,6 +115,13 @@ export const action = async ({ request }) => {
         price,
       },
     });
+
+    // Fire-and-forget: don't make the customer wait on Klaviyo's response.
+    sendKlaviyoWishlistEvent(shop, customerId, {
+      productTitle,
+      productHandle,
+      price,
+    }).catch(() => {});
 
     const items = await prisma.wishlistItem.findMany({
       where: { shop, customerId },

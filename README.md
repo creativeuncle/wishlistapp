@@ -86,10 +86,28 @@ lekin agar tumhari theme heavily customized hai to placement thoda adjust
 karna pad sakta hai — wo hum next step me tumhari actual theme dekh kar
 fine-tune kar sakte hain.
 
+## Ab tak kya extend ho chuka hai (Step 2)
+
+- **Add to Cart** button wishlist page ke har card par, "Remove from
+  wishlist" ke neeche.
+- **"Product Added to Wishlist" toast** — bottom-right corner me 3 second ke
+  liye dikhta hai jab bhi koi item add hota hai.
+- **CSV export** — Dashboard → "Export CSV" button se saara wishlist data
+  (customer email, product, price, date) CSV me download hota hai.
+- **Most wishlisted products** — Dashboard par top 10 products list, kis
+  product ko sabse zyada logo ne wishlist kiya hai.
+- **Klaviyo integration** — Settings me Klaviyo Private API Key daalo, har
+  baar koi logged-in customer wishlist me product add karega to Klaviyo par
+  "Added to Wishlist" event chala jayega — us event par Klaviyo me discount/
+  reminder email flow bana sakte ho.
+- **Multi-language** — extension ke saare storefront strings (`extensions/
+  wishlist/locales/*.json`) me hain; `en.default.json` fallback hai, `hi.json`
+  example ke taur par add kiya hai. Naye language ke liye bas ek naya
+  `<locale>.json` file add karo.
+
 ## Next steps (jab bologe extend karenge)
 
 - Guest wishlist ko customer login hone par merge karna
-- Wishlist se "Add to cart" seedha button
-- Email reminder jab wishlist product par discount aaye
-- CSV export of wishlist data for merchant
-- Multi-language support in the extension blocks
+- Wishlist se variant selector (size/color) Add to Cart se pehle
+- Back-in-stock / price-drop alerts
+- Shareable public wishlist link

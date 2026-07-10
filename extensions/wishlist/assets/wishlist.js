@@ -12,6 +12,21 @@
     configEl.getAttribute("data-wishlist-page-url") || "/pages/wishlist";
   var PROXY_BASE = "/apps/wishlist";
 
+  // Strings come from the store's active theme language (see
+  // extensions/wishlist/locales/*.json), with English fallbacks in case an
+  // older embed block config is cached without the data-i18n-* attributes.
+  var I18N = {
+    addToWishlist: configEl.getAttribute("data-i18n-add-to-wishlist") || "Add to wishlist",
+    removeFromWishlist: configEl.getAttribute("data-i18n-remove-from-wishlist") || "Remove from wishlist",
+    viewWishlist: configEl.getAttribute("data-i18n-view-wishlist") || "View wishlist",
+    removeButton: configEl.getAttribute("data-i18n-remove-button") || "Remove from wishlist",
+    addToCartButton: configEl.getAttribute("data-i18n-add-to-cart-button") || "Add to Cart",
+    addedToCart: configEl.getAttribute("data-i18n-added-to-cart") || "Added!",
+    toastAdded: configEl.getAttribute("data-i18n-toast-added") || "Product Added to Wishlist",
+    empty: configEl.getAttribute("data-i18n-empty") || "Your wishlist is empty.",
+    unavailable: configEl.getAttribute("data-i18n-unavailable") || "Wishlist is currently unavailable.",
+  };
+
   function getCustomerId() {
     if (CUSTOMER_ID_RAW) return "customer_" + CUSTOMER_ID_RAW;
     var key = "wishlist_guest_id";
@@ -114,7 +129,7 @@
         state.items = data.items || [];
         refreshAllHearts();
         updateHeaderCount();
-        if (data.added) showToast("Product Added to Wishlist");
+        if (data.added) showToast(I18N.toastAdded);
       })
       .catch(function () {
         /* silently ignore - button state stays unchanged */
@@ -168,7 +183,7 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "wishlist-heart-btn";
-      btn.setAttribute("aria-label", "Add to wishlist");
+      btn.setAttribute("aria-label", I18N.addToWishlist);
       btn.innerHTML = HEART_OUTLINE;
       btn.dataset.handle = handle;
 
@@ -195,7 +210,7 @@
       btn.classList.toggle("is-active", active);
       btn.setAttribute(
         "aria-label",
-        active ? "Remove from wishlist" : "Add to wishlist"
+        active ? I18N.removeFromWishlist : I18N.addToWishlist
       );
     });
   }
@@ -233,7 +248,7 @@
     var wrapper = document.createElement("a");
     wrapper.href = WISHLIST_PAGE_URL;
     wrapper.className = "wishlist-header-icon";
-    wrapper.setAttribute("aria-label", "View wishlist");
+    wrapper.setAttribute("aria-label", I18N.viewWishlist);
     wrapper.innerHTML =
       HEART_OUTLINE + '<span class="wishlist-header-icon__count" hidden>0</span>';
 
@@ -262,12 +277,13 @@
     if (!grid) return;
 
     if (!state.enabled) {
-      grid.innerHTML = '<p class="wishlist-grid__empty">Wishlist is currently unavailable.</p>';
+      grid.innerHTML = '<p class="wishlist-grid__empty"></p>';
+      grid.querySelector(".wishlist-grid__empty").textContent = I18N.unavailable;
       return;
     }
 
     if (state.items.length === 0) {
-      var emptyText = grid.dataset.emptyText || "Your wishlist is empty.";
+      var emptyText = grid.dataset.emptyText || I18N.empty;
       grid.innerHTML = '<p class="wishlist-grid__empty"></p>';
       grid.querySelector(".wishlist-grid__empty").textContent = emptyText;
       return;
@@ -298,7 +314,7 @@
       var removeBtn = document.createElement("button");
       removeBtn.type = "button";
       removeBtn.className = "wishlist-card__remove-btn";
-      removeBtn.textContent = "Remove from wishlist";
+      removeBtn.textContent = I18N.removeButton;
       removeBtn.addEventListener("click", function () {
         removeBtn.disabled = true;
         fetchJSON(PROXY_BASE + "/remove", {
@@ -324,7 +340,7 @@
       var addToCartBtn = document.createElement("button");
       addToCartBtn.type = "button";
       addToCartBtn.className = "wishlist-card__add-to-cart-btn";
-      addToCartBtn.textContent = "Add to Cart";
+      addToCartBtn.textContent = I18N.addToCartButton;
       if (!item.variantId) {
         addToCartBtn.disabled = true;
       } else {
@@ -340,9 +356,9 @@
           })
             .then(function (r) {
               if (!r.ok) throw new Error("add_to_cart_failed");
-              addToCartBtn.textContent = "Added!";
+              addToCartBtn.textContent = I18N.addedToCart;
               setTimeout(function () {
-                addToCartBtn.textContent = "Add to Cart";
+                addToCartBtn.textContent = I18N.addToCartButton;
                 addToCartBtn.disabled = false;
               }, 1500);
             })
