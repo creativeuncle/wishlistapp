@@ -19,6 +19,19 @@ api_version = "2026-10"
   topics = [ "products/update" ]
   uri = "/webhooks/products/update"
 
+  # Mandatory GDPR compliance webhooks - required for App Store approval.
+  [[webhooks.subscriptions]]
+  topics = [ "customers/data_request" ]
+  uri = "/webhooks/customers/data_request"
+
+  [[webhooks.subscriptions]]
+  topics = [ "customers/redact" ]
+  uri = "/webhooks/customers/redact"
+
+  [[webhooks.subscriptions]]
+  topics = [ "shop/redact" ]
+  uri = "/webhooks/shop/redact"
+
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
 scopes = "read_customers,read_products,write_content,read_themes"
