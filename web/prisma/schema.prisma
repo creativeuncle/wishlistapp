@@ -57,7 +57,7 @@ model ShopSettings {
   // "Add to Wishlist" button shown below Add to Cart on the product page
   atcButtonEnabled      Boolean @default(true)
   atcButtonAddText      String  @default("Add to Wishlist")
-  atcButtonRemoveText   String  @default("Added to Wishlist")
+  atcButtonRemoveText   String  @default("Remove from Wishlist")
   atcButtonStyle        String  @default("filled") // "filled" | "outline"
   atcButtonBgColor      String  @default("#222222")
   atcButtonTextColor    String  @default("#FFFFFF")

@@ -56,7 +56,7 @@ export const action = async ({ request }) => {
     const data = {
       atcButtonEnabled: formData.get("atcButtonEnabled") === "true",
       atcButtonAddText: formData.get("atcButtonAddText")?.toString() || "Add to Wishlist",
-      atcButtonRemoveText: formData.get("atcButtonRemoveText")?.toString() || "Added to Wishlist",
+      atcButtonRemoveText: formData.get("atcButtonRemoveText")?.toString() || "Remove from Wishlist",
       atcButtonStyle: formData.get("atcButtonStyle")?.toString() === "outline" ? "outline" : "filled",
       atcButtonBgColor: formData.get("atcButtonBgColor")?.toString() || "#222222",
       atcButtonTextColor: formData.get("atcButtonTextColor")?.toString() || "#FFFFFF",
@@ -177,7 +177,7 @@ export default function Settings() {
           </Card>
         </Layout.Section>
 
-        <Layout.Section>
+        <Layout.Section variant="oneThird">
           <Card>
             <BlockStack gap="400">
               <BlockStack gap="100">
@@ -313,70 +313,180 @@ export default function Settings() {
           </Card>
         </Layout.Section>
 
-        <Layout.Section variant="oneThird">
-          <Card>
-            <BlockStack gap="300">
-              <Text as="h2" variant="headingMd">
-                Preview
-              </Text>
+        <Layout.Section>
+          <Card padding="0">
+            <div
+              style={{
+                border: "1px solid #e1e1e1",
+                borderRadius: 12,
+                overflow: "hidden",
+                background: "#fff",
+              }}
+            >
+              {/* Mock storefront header */}
               <div
                 style={{
-                  border: "1px solid #e1e1e1",
-                  borderRadius: 8,
-                  padding: 16,
-                  background: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "14px 24px",
+                  borderBottom: "1px solid #eee",
                 }}
               >
-                <div
-                  style={{
-                    width: "100%",
-                    aspectRatio: "1 / 1",
-                    background: "#f1f1f1",
-                    borderRadius: 6,
-                    marginBottom: 12,
-                  }}
-                />
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                  Product title
+                <div style={{ fontWeight: 700, letterSpacing: 1, color: "#999" }}>
+                  [ Your store ]
                 </div>
-                <div style={{ color: "#666", marginBottom: 12 }}>$49.00</div>
-                <button
-                  type="button"
-                  disabled
-                  style={{
-                    width: "100%",
-                    padding: "12px 16px",
-                    marginBottom: 8,
-                    border: "1px solid #ccc",
-                    borderRadius: 6,
-                    background: "#f1f1f1",
-                    color: "#999",
-                    fontWeight: 600,
-                    fontSize: 14,
-                  }}
-                >
-                  Add to cart
-                </button>
-                {atcEnabled && (
-                  <button
-                    type="button"
+                <div style={{ display: "flex", gap: 20, color: "#333", fontSize: 14 }}>
+                  <span>Home</span>
+                  <span>Products</span>
+                  <span>Collection</span>
+                </div>
+                <div style={{ display: "flex", gap: 16, alignItems: "center", color: "#333" }}>
+                  <span style={{ position: "relative" }}>
+                    ♡
+                    <span
+                      style={{
+                        position: "absolute",
+                        top: -6,
+                        right: -8,
+                        background: "#111",
+                        color: "#fff",
+                        borderRadius: 999,
+                        fontSize: 10,
+                        width: 14,
+                        height: 14,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      1
+                    </span>
+                  </span>
+                  <span>🔍</span>
+                  <span>🛒</span>
+                </div>
+              </div>
+
+              {/* Mock product page */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 32,
+                  padding: 32,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={{ flex: "1 1 320px", position: "relative" }}>
+                  <div
                     style={{
                       width: "100%",
-                      padding: "12px 16px",
-                      fontWeight: 600,
-                      fontSize: 14,
-                      cursor: "pointer",
-                      borderRadius: `${parseInt(cornerRadius, 10) || 0}px`,
-                      border: `1px solid ${bgColor}`,
-                      background: style === "outline" ? "transparent" : bgColor,
-                      color: style === "outline" ? bgColor : textColor,
+                      aspectRatio: "1 / 1",
+                      background: "#f1f1f1",
+                      borderRadius: 6,
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 12,
+                      left: 12,
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: "#fff",
+                      boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
-                    ♡ {addText || "Add to Wishlist"}
+                    ♡
+                  </span>
+                </div>
+
+                <div style={{ flex: "1 1 280px" }}>
+                  <div style={{ fontSize: 22, color: "#333", marginBottom: 6 }}>
+                    Product title
+                  </div>
+                  <div style={{ marginBottom: 20 }}>
+                    <span style={{ textDecoration: "line-through", color: "#999", marginRight: 8 }}>
+                      $300 USD
+                    </span>
+                    <span style={{ color: "#333" }}>$200 USD</span>
+                  </div>
+
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ fontSize: 13, color: "#666", marginBottom: 4 }}>
+                      Color
+                    </div>
+                    <div
+                      style={{
+                        border: "1px solid #ccc",
+                        borderRadius: 6,
+                        padding: "8px 12px",
+                        fontSize: 14,
+                        color: "#999",
+                      }}
+                    >
+                      Select
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled
+                    style={{
+                      width: "100%",
+                      padding: "13px 16px",
+                      marginBottom: 8,
+                      border: "1px solid #ccc",
+                      borderRadius: 6,
+                      background: "#e8e8e8",
+                      color: "#999",
+                      fontWeight: 600,
+                      fontSize: 14,
+                    }}
+                  >
+                    Add to cart
                   </button>
-                )}
+
+                  {atcEnabled && (
+                    <button
+                      type="button"
+                      style={{
+                        width: "100%",
+                        padding: "13px 16px",
+                        marginBottom: 16,
+                        fontWeight: 600,
+                        fontSize: 14,
+                        cursor: "pointer",
+                        borderRadius: `${parseInt(cornerRadius, 10) || 0}px`,
+                        border: `1px solid ${bgColor}`,
+                        background: style === "outline" ? "transparent" : bgColor,
+                        color: style === "outline" ? bgColor : textColor,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 8,
+                      }}
+                    >
+                      ♡ {addText || "Add to Wishlist"}
+                    </button>
+                  )}
+
+                  <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
+                    Add a detailed description of your product, including its
+                    key features, size and weight, and any important
+                    information customers should know.
+                    <ul style={{ marginTop: 8, paddingLeft: 18 }}>
+                      <li>Material: What is the product made of?</li>
+                      <li>Dimensions: What is the size of the product?</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
-            </BlockStack>
+            </div>
           </Card>
         </Layout.Section>
       </Layout>

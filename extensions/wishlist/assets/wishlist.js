@@ -2,7 +2,7 @@
   "use strict";
 
   var HEART_OUTLINE =
-    '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.1 2.2 4.5 5.6 4c2-.3 3.9.6 5 2.2 1.1-1.6 3-2.5 5-2.2 3.4.5 5.2 4.1 3.6 7.7C19.5 16.4 12 21 12 21z"/></svg>';
+    '<svg viewBox="0 0 24 24"><path d="M12 20.25c-.2 0-.39-.06-.55-.18C7.4 17.2 3 13.4 3 9.36 3 6.4 5.28 4 8.1 4c1.5 0 2.94.68 3.9 1.83A5.13 5.13 0 0 1 15.9 4C18.72 4 21 6.4 21 9.36c0 4.04-4.4 7.84-8.45 10.71-.16.12-.35.18-.55.18Z" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   var configEl = document.getElementById("wishlist-app-config");
   if (!configEl) return;
@@ -59,7 +59,7 @@
   var ATC_BUTTON = {
     enabled: true,
     addText: "Add to Wishlist",
-    removeText: "Added to Wishlist",
+    removeText: "Remove from Wishlist",
     style: "filled",
     bgColor: "#222222",
     textColor: "#FFFFFF",
@@ -187,7 +187,17 @@
   }
 
   function extractHandleFromHref(href) {
-    var match = href.match(/\/products\/([a-zA-Z0-9\-_%]+)/);
+    if (!href) return null;
+    var path;
+    try {
+      path = new URL(href, window.location.origin).pathname;
+    } catch (e) {
+      return null;
+    }
+    // Only match a real product page link, not a share/social URL that
+    // happens to carry a product URL inside a query string (e.g. Facebook's
+    // sharer.php?u=.../products/...).
+    var match = path.match(/^\/products\/([a-zA-Z0-9\-_%]+)/);
     return match ? match[1] : null;
   }
 
