@@ -188,16 +188,19 @@
 
   function extractHandleFromHref(href) {
     if (!href) return null;
-    var path;
+    var url;
     try {
-      path = new URL(href, window.location.origin).pathname;
+      url = new URL(href, window.location.origin);
     } catch (e) {
       return null;
     }
-    // Only match a real product page link, not a share/social URL that
-    // happens to carry a product URL inside a query string (e.g. Facebook's
-    // sharer.php?u=.../products/...).
-    var match = path.match(/^\/products\/([a-zA-Z0-9\-_%]+)/);
+    // Skip links to a different site entirely (Facebook/Twitter/Pinterest
+    // share buttons etc.) - the product URL those carry is only inside a
+    // query string, not this link's own path, so it'd otherwise false-match.
+    if (url.hostname !== window.location.hostname) return null;
+    // Matches both plain product links (/products/handle) and
+    // collection-scoped ones (/collections/<handle>/products/<handle>).
+    var match = url.pathname.match(/\/products\/([a-zA-Z0-9\-_%]+)/);
     return match ? match[1] : null;
   }
 
