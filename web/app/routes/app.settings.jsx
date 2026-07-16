@@ -490,6 +490,7 @@ export default function Settings() {
           </Card>
         </Layout.Section>
       </Layout>
+      <div style={{ height: 40 }} />
     </Page>
   );
 }
