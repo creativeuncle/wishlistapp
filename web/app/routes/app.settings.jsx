@@ -1,4 +1,4 @@
-import { useLoaderData, useSubmit, useNavigation } from "@remix-run/react";
+import { useLoaderData, useFetcher } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -11,9 +11,15 @@ import {
   Checkbox,
   TextField,
 } from "@shopify/polaris";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
+
+function showSavedToast(message) {
+  if (typeof window !== "undefined" && window.shopify?.toast) {
+    window.shopify.toast.show(message);
+  }
+}
 
 export const loader = async ({ request }) => {
   const { session } = await authenticate.admin(request);
@@ -82,9 +88,9 @@ export const action = async ({ request }) => {
 
 export default function Settings() {
   const { enabled, hasKlaviyoApiKey, atcButton } = useLoaderData();
-  const submit = useSubmit();
-  const navigation = useNavigation();
-  const isSaving = navigation.state === "submitting";
+  const toggleFetcher = useFetcher();
+  const klaviyoFetcher = useFetcher();
+  const atcFetcher = useFetcher();
   const [klaviyoApiKey, setKlaviyoApiKey] = useState("");
 
   const [atcEnabled, setAtcEnabled] = useState(atcButton.enabled);
@@ -95,16 +101,45 @@ export default function Settings() {
   const [textColor, setTextColor] = useState(atcButton.textColor);
   const [cornerRadius, setCornerRadius] = useState(String(atcButton.cornerRadius));
 
+  useEffect(() => {
+    if (toggleFetcher.state === "idle" && toggleFetcher.data) {
+      showSavedToast(
+        toggleFetcher.data.enabled ? "Wishlist enabled" : "Wishlist disabled",
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toggleFetcher.state]);
+
+  useEffect(() => {
+    if (klaviyoFetcher.state === "idle" && klaviyoFetcher.data) {
+      showSavedToast("Klaviyo key saved");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [klaviyoFetcher.state]);
+
+  useEffect(() => {
+    if (atcFetcher.state === "idle" && atcFetcher.data) {
+      showSavedToast("Button settings saved");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [atcFetcher.state]);
+
   const handleToggle = useCallback(() => {
-    submit({ _action: "toggle", enabled: (!enabled).toString() }, { method: "post" });
-  }, [enabled, submit]);
+    toggleFetcher.submit(
+      { _action: "toggle", enabled: (!enabled).toString() },
+      { method: "post" },
+    );
+  }, [enabled, toggleFetcher]);
 
   const handleSaveKlaviyo = useCallback(() => {
-    submit({ _action: "klaviyo", klaviyoApiKey }, { method: "post" });
-  }, [klaviyoApiKey, submit]);
+    klaviyoFetcher.submit(
+      { _action: "klaviyo", klaviyoApiKey },
+      { method: "post" },
+    );
+  }, [klaviyoApiKey, klaviyoFetcher]);
 
   const handleSaveAtcButton = useCallback(() => {
-    submit(
+    atcFetcher.submit(
       {
         _action: "atcButton",
         atcButtonEnabled: atcEnabled.toString(),
@@ -117,7 +152,7 @@ export default function Settings() {
       },
       { method: "post" },
     );
-  }, [atcEnabled, addText, removeText, style, bgColor, textColor, cornerRadius, submit]);
+  }, [atcEnabled, addText, removeText, style, bgColor, textColor, cornerRadius, atcFetcher]);
 
   return (
     <Page title="Settings">
@@ -137,7 +172,7 @@ export default function Settings() {
                   variant={enabled ? "primary" : "secondary"}
                   tone={enabled ? "success" : undefined}
                   onClick={handleToggle}
-                  loading={isSaving}
+                  loading={toggleFetcher.state !== "idle"}
                 >
                   {enabled ? "Enabled" : "Disabled"} — click to{" "}
                   {enabled ? "disable" : "enable"}
@@ -169,7 +204,7 @@ export default function Settings() {
                 onChange={setKlaviyoApiKey}
               />
               <InlineStack gap="300" align="start">
-                <Button onClick={handleSaveKlaviyo} loading={isSaving}>
+                <Button onClick={handleSaveKlaviyo} loading={klaviyoFetcher.state !== "idle"}>
                   Save Klaviyo key
                 </Button>
               </InlineStack>
@@ -305,7 +340,7 @@ export default function Settings() {
               </div>
 
               <InlineStack gap="300" align="start">
-                <Button onClick={handleSaveAtcButton} loading={isSaving}>
+                <Button onClick={handleSaveAtcButton} loading={atcFetcher.state !== "idle"}>
                   Save button settings
                 </Button>
               </InlineStack>
