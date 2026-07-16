@@ -33,6 +33,15 @@ export const loader = async ({ request }) => {
     return json({
       enabled: settings.enabled,
       wishlistPageUrl: settings.wishlistPageUrl || null,
+      atcButton: {
+        enabled: settings.atcButtonEnabled,
+        addText: settings.atcButtonAddText,
+        removeText: settings.atcButtonRemoveText,
+        style: settings.atcButtonStyle,
+        bgColor: settings.atcButtonBgColor,
+        textColor: settings.atcButtonTextColor,
+        cornerRadius: settings.atcButtonCornerRadius,
+      },
     });
   }
 

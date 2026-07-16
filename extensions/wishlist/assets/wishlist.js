@@ -54,6 +54,19 @@
   };
   var pageItems = []; // items to render on the wishlist page (own or shared)
 
+  // "Add to Wishlist" button shown below Add to Cart on the product page,
+  // customizable from the app's Settings page. Filled in from /status.
+  var ATC_BUTTON = {
+    enabled: true,
+    addText: "Add to Wishlist",
+    removeText: "Added to Wishlist",
+    style: "filled",
+    bgColor: "#222222",
+    textColor: "#FFFFFF",
+    cornerRadius: 0,
+  };
+  var atcButtonUpdaters = [];
+
   function productIdsSet() {
     var set = {};
     state.items.forEach(function (item) {
@@ -93,6 +106,7 @@
         if (!state.enabled) return { items: [] };
         state.enabled = !!data.enabled;
         if (data.wishlistPageUrl) WISHLIST_PAGE_URL = data.wishlistPageUrl;
+        if (data.atcButton) Object.assign(ATC_BUTTON, data.atcButton);
         if (!state.enabled) return { items: [] };
         return mergeGuestWishlistIfNeeded().then(function () {
           return fetchJSON(
@@ -159,6 +173,9 @@
         if (!SHARE_CUSTOMER_ID) pageItems = state.items;
         refreshAllHearts();
         updateHeaderCount();
+        atcButtonUpdaters.forEach(function (update) {
+          update();
+        });
         if (data.added) showToast(I18N.toastAdded);
       })
       .catch(function () {
@@ -299,6 +316,71 @@
     var count = state.items.length;
     countEl.textContent = count;
     countEl.hidden = count === 0;
+  }
+
+  // ---------- "Add to Wishlist" button below Add to Cart ----------
+  function getCurrentProductHandle() {
+    var match = window.location.pathname.match(/\/products\/([a-zA-Z0-9\-_%]+)/);
+    return match ? match[1] : null;
+  }
+
+  function findAddToCartButton() {
+    var selectors = [
+      'form[action*="/cart/add"] button[type="submit"]',
+      'form[action*="/cart/add"] button[name="add"]',
+      'button[name="add"]',
+      '.product-form__submit',
+    ];
+    for (var i = 0; i < selectors.length; i++) {
+      var el = document.querySelector(selectors[i]);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  function injectAddToCartWishlistButton() {
+    if (!state.enabled || !ATC_BUTTON.enabled) return;
+    if (document.getElementById("wishlist-atc-btn")) return;
+
+    var handle = getCurrentProductHandle();
+    if (!handle) return;
+
+    var addToCartBtn = findAddToCartButton();
+    if (!addToCartBtn) return;
+
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "wishlist-atc-btn";
+    btn.className =
+      "wishlist-atc-btn wishlist-atc-btn--" +
+      (ATC_BUTTON.style === "outline" ? "outline" : "filled");
+    btn.style.setProperty("--wishlist-atc-bg", ATC_BUTTON.bgColor);
+    btn.style.setProperty("--wishlist-atc-color", ATC_BUTTON.textColor);
+    btn.style.setProperty(
+      "--wishlist-atc-radius",
+      (ATC_BUTTON.cornerRadius || 0) + "px"
+    );
+    btn.innerHTML = HEART_OUTLINE + '<span class="wishlist-atc-btn__label"></span>';
+
+    function updateLabel() {
+      var idsByHandle = {};
+      state.items.forEach(function (item) {
+        idsByHandle[item.productHandle] = true;
+      });
+      var active = !!idsByHandle[handle];
+      btn.classList.toggle("is-active", active);
+      btn.querySelector(".wishlist-atc-btn__label").textContent = active
+        ? ATC_BUTTON.removeText
+        : ATC_BUTTON.addText;
+    }
+    updateLabel();
+    atcButtonUpdaters.push(updateLabel);
+
+    btn.addEventListener("click", function () {
+      toggleWishlist(handle, btn);
+    });
+
+    addToCartBtn.insertAdjacentElement("afterend", btn);
   }
 
   // ---------- Wishlist page grid ----------
@@ -509,6 +591,7 @@
       if (!state.enabled) return;
       injectHearts();
       injectHeaderIcon();
+      injectAddToCartWishlistButton();
       injectWishlistPageIfNeeded();
       loadPageItems().then(renderWishlistPage);
 
@@ -519,6 +602,7 @@
         window.__wishlistDebounce = setTimeout(function () {
           injectHearts();
           injectHeaderIcon();
+          injectAddToCartWishlistButton();
         }, 300);
       });
       observer.observe(document.body, { childList: true, subtree: true });

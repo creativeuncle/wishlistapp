@@ -96,6 +96,51 @@
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.2);
 }
 
+/* ---------- "Add to Wishlist" button below Add to Cart ---------- */
+.wishlist-atc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--wishlist-atc-radius, 0);
+  transition: opacity 0.15s ease;
+}
+
+.wishlist-atc-btn:hover {
+  opacity: 0.85;
+}
+
+.wishlist-atc-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  flex-shrink: 0;
+}
+
+.wishlist-atc-btn--filled {
+  border: 1px solid var(--wishlist-atc-bg, #222);
+  background: var(--wishlist-atc-bg, #222);
+  color: var(--wishlist-atc-color, #fff);
+}
+
+.wishlist-atc-btn--outline {
+  border: 1px solid var(--wishlist-atc-bg, #222);
+  background: transparent;
+  color: var(--wishlist-atc-bg, #222);
+}
+
+.wishlist-atc-btn.is-active svg {
+  fill: currentColor;
+}
+
 /* ---------- Wishlist page grid ---------- */
 .wishlist-page {
   max-width: 1200px;

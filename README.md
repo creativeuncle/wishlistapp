@@ -120,6 +120,11 @@ fine-tune kar sakte hain.
   wapas stock me aaye, us customer ke liye Klaviyo par "Wishlist Price
   Drop" / "Wishlist Back In Stock" event chala jaata hai (Klaviyo key
   Settings me set hona zaroori hai) — us event par email flow bana sakte ho.
+- **"Add to Wishlist" button** — product page par Add to Cart ke neeche ek
+  poora button (sirf heart icon nahi) dikh sakta hai. Settings → "Add to
+  Wishlist button" me on/off toggle, button text (add/remove), style
+  (Filled/Outline), background/text color, aur corner radius customize
+  kar sakte ho — right side me live preview turant dikhta hai.
 
 ## Next steps (jab bologe extend karenge)
 
