@@ -12,7 +12,10 @@ const shopify = shopifyApp({
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
   apiVersion: ApiVersion.October24,
   scopes: process.env.SCOPES?.split(","),
-  appUrl: process.env.HOST || "",
+  // Deliberately NOT process.env.HOST - many hosts (Render included) reserve
+  // that name for the server's own bind address, so setting it to a full
+  // URL breaks the Node server itself with a DNS lookup error.
+  appUrl: process.env.SHOPIFY_APP_URL || "",
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
   distribution: AppDistribution.AppStore,
