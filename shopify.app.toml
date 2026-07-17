@@ -27,17 +27,11 @@ api_version = "2024-10"
   uri = "/webhooks/products/update"
 
   # Mandatory GDPR compliance webhooks - required for App Store approval.
-  [[webhooks.subscriptions]]
-  topics = [ "customers/data_request" ]
-  uri = "/webhooks/customers/data_request"
-
-  [[webhooks.subscriptions]]
-  topics = [ "customers/redact" ]
-  uri = "/webhooks/customers/redact"
-
-  [[webhooks.subscriptions]]
-  topics = [ "shop/redact" ]
-  uri = "/webhooks/shop/redact"
+  # These use a dedicated section, not [[webhooks.subscriptions]].
+  [webhooks.privacy_compliance]
+  customer_data_request_url = "/webhooks/customers/data_request"
+  customer_deletion_url = "/webhooks/customers/redact"
+  shop_deletion_url = "/webhooks/shop/redact"
 
 [app_proxy]
 url = "https://REPLACE_WITH_YOUR_APP_URL/proxy"
