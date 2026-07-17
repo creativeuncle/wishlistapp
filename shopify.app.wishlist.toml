@@ -2,7 +2,7 @@
 
 client_id = "cbe9c004ced404239513de7efc9b9d62"
 name = "wishlist"
-application_url = "https://shopify.dev/apps/default-app-home"
+application_url = "https://wishlistapp-tsvz.onrender.com"
 embedded = true
 
 [build]
@@ -31,9 +31,13 @@ api_version = "2024-10"
 scopes = "read_customers,read_products,write_content,read_themes"
 
 [auth]
-redirect_urls = [ "https://shopify.dev/apps/default-app-home/api/auth" ]
+redirect_urls = [
+  "https://wishlistapp-tsvz.onrender.com/auth/callback",
+  "https://wishlistapp-tsvz.onrender.com/auth/shopify/callback",
+  "https://wishlistapp-tsvz.onrender.com/api/auth/callback"
+]
 
 [app_proxy]
-url = "https://loud-pub-object-university.trycloudflare.com/proxy"
+url = "https://wishlistapp-tsvz.onrender.com/proxy"
 subpath = "wishlist"
 prefix = "apps"
