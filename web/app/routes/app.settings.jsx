@@ -10,9 +10,10 @@ import {
   ButtonGroup,
   Checkbox,
   TextField,
+  Banner,
 } from "@shopify/polaris";
 import { useCallback, useEffect, useState } from "react";
-import { authenticate } from "../shopify.server";
+import { authenticate, createWishlistPage } from "../shopify.server";
 import prisma from "../db.server";
 
 function showSavedToast(message) {
@@ -31,6 +32,7 @@ export const loader = async ({ request }) => {
   return {
     enabled: settings.enabled,
     hasKlaviyoApiKey: !!settings.klaviyoApiKey,
+    wishlistPageUrl: settings.wishlistPageUrl || null,
     atcButton: {
       enabled: settings.atcButtonEnabled,
       addText: settings.atcButtonAddText,
@@ -44,9 +46,18 @@ export const loader = async ({ request }) => {
 };
 
 export const action = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
   const formData = await request.formData();
   const intent = formData.get("_action");
+
+  if (intent === "createWishlistPage") {
+    try {
+      const result = await createWishlistPage(admin, session.shop);
+      return { pageCreated: true, pageUrl: result?.pageUrl };
+    } catch (error) {
+      return { pageCreated: false, error: error.message || "Something went wrong." };
+    }
+  }
 
   if (intent === "klaviyo") {
     const klaviyoApiKey = formData.get("klaviyoApiKey")?.toString().trim() || null;
@@ -87,11 +98,15 @@ export const action = async ({ request }) => {
 };
 
 export default function Settings() {
-  const { enabled, hasKlaviyoApiKey, atcButton } = useLoaderData();
+  const { enabled, hasKlaviyoApiKey, wishlistPageUrl, atcButton } = useLoaderData();
   const toggleFetcher = useFetcher();
   const klaviyoFetcher = useFetcher();
   const atcFetcher = useFetcher();
+  const pageFetcher = useFetcher();
   const [klaviyoApiKey, setKlaviyoApiKey] = useState("");
+  const pageUrl = pageFetcher.data?.pageCreated
+    ? pageFetcher.data.pageUrl
+    : wishlistPageUrl;
 
   const [atcEnabled, setAtcEnabled] = useState(atcButton.enabled);
   const [addText, setAddText] = useState(atcButton.addText);
@@ -154,9 +169,60 @@ export default function Settings() {
     );
   }, [atcEnabled, addText, removeText, style, bgColor, textColor, cornerRadius, atcFetcher]);
 
+  const handleCreatePage = useCallback(() => {
+    pageFetcher.submit({ _action: "createWishlistPage" }, { method: "post" });
+  }, [pageFetcher]);
+
   return (
     <Page title="Settings">
       <Layout>
+        <Layout.Section>
+          <BlockStack gap="200">
+            <Text as="h2" variant="headingLg">
+              Customizations
+            </Text>
+          </BlockStack>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="300">
+              <Text as="h2" variant="headingMd">
+                Wishlist page
+              </Text>
+              {pageUrl ? (
+                <Text as="p" tone="subdued">
+                  Your storefront wishlist page is live at{" "}
+                  <Text as="span" fontWeight="semibold">
+                    {pageUrl}
+                  </Text>
+                  . The header heart icon on your storefront links here, and
+                  the products grid is injected automatically — no theme
+                  editing needed.
+                </Text>
+              ) : (
+                <Text as="p" tone="subdued">
+                  No wishlist page yet — create one so the header heart icon
+                  has somewhere to link to.
+                </Text>
+              )}
+              {pageFetcher.data && !pageFetcher.data.pageCreated && (
+                <Banner tone="critical">{pageFetcher.data.error}</Banner>
+              )}
+              {!pageUrl && (
+                <InlineStack gap="300">
+                  <Button
+                    onClick={handleCreatePage}
+                    loading={pageFetcher.state !== "idle"}
+                  >
+                    Create Wishlist Page
+                  </Button>
+                </InlineStack>
+              )}
+            </BlockStack>
+          </Card>
+        </Layout.Section>
+
         <Layout.Section>
           <Card>
             <BlockStack gap="300">
@@ -180,6 +246,14 @@ export default function Settings() {
               </InlineStack>
             </BlockStack>
           </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <BlockStack gap="200">
+            <Text as="h2" variant="headingLg">
+              Integrations
+            </Text>
+          </BlockStack>
         </Layout.Section>
         <Layout.Section>
           <Card>

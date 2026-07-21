@@ -1,5 +1,5 @@
-import { useCallback, useState } from "react";
-import { useLoaderData, useFetcher } from "@remix-run/react";
+import { useState } from "react";
+import { useLoaderData } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -7,12 +7,31 @@ import {
   BlockStack,
   InlineStack,
   Text,
-  Button,
   Banner,
   InlineGrid,
 } from "@shopify/polaris";
-import { authenticate, createWishlistPage, getAppEmbedStatus } from "../shopify.server";
+import { authenticate, getAppEmbedStatus } from "../shopify.server";
 import prisma from "../db.server";
+
+const TREND_DAYS = 30;
+
+// Builds an array of { date, count } for the last `days` days (oldest
+// first), counting how many of the given timestamps fall on each day.
+function bucketByDay(dates, days) {
+  const buckets = new Map();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    buckets.set(d.toISOString().slice(0, 10), 0);
+  }
+  for (const date of dates) {
+    const key = new Date(date).toISOString().slice(0, 10);
+    if (buckets.has(key)) buckets.set(key, buckets.get(key) + 1);
+  }
+  return [...buckets.entries()].map(([date, count]) => ({ date, count }));
+}
 
 export const loader = async ({ request }) => {
   const { admin, session } = await authenticate.admin(request);
@@ -23,124 +42,131 @@ export const loader = async ({ request }) => {
     editorUrl: null,
   }));
 
-  // Every wishlist item for this shop, used to derive all the stats below
   const items = await prisma.wishlistItem.findMany({
     where: { shop },
     select: {
       customerId: true,
       productId: true,
       price: true,
-      productTitle: true,
-      productImage: true,
+      createdAt: true,
     },
   });
 
-  const wishlistsByCustomer = new Map();
-  const productStats = new Map();
+  const firstSeenByCustomer = new Map();
+  const productIds = new Set();
+  const valueByCustomer = new Map();
   let totalValue = 0;
 
   for (const item of items) {
     const price = parseFloat(item.price);
     const value = Number.isFinite(price) ? price : 0;
     totalValue += value;
-    wishlistsByCustomer.set(
+    productIds.add(item.productId);
+    valueByCustomer.set(
       item.customerId,
-      (wishlistsByCustomer.get(item.customerId) || 0) + value,
+      (valueByCustomer.get(item.customerId) || 0) + value,
     );
 
-    const existing = productStats.get(item.productId);
-    if (existing) {
-      existing.count += 1;
-    } else {
-      productStats.set(item.productId, {
-        count: 1,
-        title: item.productTitle,
-        image: item.productImage,
-      });
+    const existingFirst = firstSeenByCustomer.get(item.customerId);
+    if (!existingFirst || item.createdAt < existingFirst) {
+      firstSeenByCustomer.set(item.customerId, item.createdAt);
     }
   }
 
-  const totalWishlists = wishlistsByCustomer.size;
-  const averageWishlist = totalWishlists
-    ? totalValue / totalWishlists
-    : 0;
+  const totalWishlists = firstSeenByCustomer.size;
+  const averageWishlist = totalWishlists ? totalValue / totalWishlists : 0;
 
-  const topProducts = [...productStats.values()]
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 10);
-
-  const settings = await prisma.shopSettings.upsert({
-    where: { shop },
-    update: {},
-    create: { shop, enabled: true },
-  });
+  const savedItemsTrend = bucketByDay(
+    items.map((i) => i.createdAt),
+    TREND_DAYS,
+  );
+  const newWishlistsTrend = bucketByDay(
+    [...firstSeenByCustomer.values()],
+    TREND_DAYS,
+  );
 
   return {
     totalWishlists,
-    totalProducts: productStats.size,
+    totalProducts: productIds.size,
     totalValue,
     averageWishlist,
-    topProducts,
-    wishlistPageUrl: settings.wishlistPageUrl || null,
+    savedItemsTrend,
+    newWishlistsTrend,
+    savedItemsLast30: savedItemsTrend.reduce((sum, d) => sum + d.count, 0),
+    newWishlistsLast30: newWishlistsTrend.reduce((sum, d) => sum + d.count, 0),
     appStoreReviewUrl: process.env.APP_STORE_REVIEW_URL || null,
     appEmbedEnabled: appEmbed.enabled,
     appEmbedEditorUrl: appEmbed.editorUrl,
   };
 };
 
-export const action = async ({ request }) => {
-  const { admin, session } = await authenticate.admin(request);
-  try {
-    const result = await createWishlistPage(admin, session.shop);
-    return { ok: true, pageUrl: result?.pageUrl };
-  } catch (error) {
-    return { ok: false, error: error.message || "Something went wrong." };
-  }
-};
+function TrendChart({ title, total, data }) {
+  const max = Math.max(1, ...data.map((d) => d.count));
+  return (
+    <Card>
+      <BlockStack gap="300">
+        <BlockStack gap="050">
+          <Text as="h3" variant="headingMd" tone="subdued">
+            {title}
+          </Text>
+          <Text as="p" variant="heading2xl">
+            {total}
+          </Text>
+        </BlockStack>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-end",
+            gap: 2,
+            height: 60,
+          }}
+        >
+          {data.map((d) => (
+            <div
+              key={d.date}
+              title={`${d.date}: ${d.count}`}
+              style={{
+                flex: 1,
+                minWidth: 2,
+                height: `${Math.max(4, (d.count / max) * 100)}%`,
+                background: d.count > 0 ? "#5c6ac4" : "#e4e5e7",
+                borderRadius: 2,
+              }}
+            />
+          ))}
+        </div>
+        <InlineStack align="space-between">
+          <Text as="span" tone="subdued" variant="bodySm">
+            {data[0]?.date}
+          </Text>
+          <Text as="span" tone="subdued" variant="bodySm">
+            {data[data.length - 1]?.date}
+          </Text>
+        </InlineStack>
+      </BlockStack>
+    </Card>
+  );
+}
 
-export default function Dashboard() {
+export default function Analytics() {
   const {
     totalWishlists,
     totalProducts,
     totalValue,
     averageWishlist,
-    topProducts,
-    wishlistPageUrl,
+    savedItemsTrend,
+    newWishlistsTrend,
+    savedItemsLast30,
+    newWishlistsLast30,
     appStoreReviewUrl,
     appEmbedEnabled,
     appEmbedEditorUrl,
   } = useLoaderData();
-  const fetcher = useFetcher();
-  const isCreating = fetcher.state !== "idle";
-  const result = fetcher.data;
-  const pageUrl = result?.ok ? result.pageUrl : wishlistPageUrl;
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [isExporting, setIsExporting] = useState(false);
-
-  const handleExportCsv = useCallback(async () => {
-    setIsExporting(true);
-    try {
-      const response = await fetch("/app/export-csv");
-      if (!response.ok) throw new Error("export_failed");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `wishlist-export-${Date.now()}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    } catch {
-      /* silently ignore - the button just stops loading */
-    } finally {
-      setIsExporting(false);
-    }
-  }, []);
 
   return (
-    <Page title="Dashboard">
+    <Page title="Analytics">
       <Layout>
         {appEmbedEnabled === false && appEmbedEditorUrl && (
           <Layout.Section>
@@ -159,47 +185,34 @@ export default function Dashboard() {
             </Banner>
           </Layout.Section>
         )}
+
         <Layout.Section>
-          <Card>
-            <BlockStack gap="300">
-              <Text as="h2" variant="headingMd">
-                Wishlist page
-              </Text>
-              {pageUrl ? (
-                <Text as="p" tone="subdued">
-                  Your storefront wishlist page is live at{" "}
-                  <Text as="span" fontWeight="semibold">
-                    {pageUrl}
-                  </Text>
-                  . The header heart icon on your storefront links here, and
-                  the products grid is injected automatically — no theme
-                  editing needed.
-                </Text>
-              ) : (
-                <Text as="p" tone="subdued">
-                  No wishlist page yet — create one so the header heart icon
-                  has somewhere to link to.
-                </Text>
-              )}
-              {result && !result.ok && (
-                <Banner tone="critical">{result.error}</Banner>
-              )}
-              {!pageUrl && (
-                <InlineStack gap="300">
-                  <Button onClick={() => fetcher.submit({}, { method: "post" })} loading={isCreating}>
-                    Create Wishlist Page
-                  </Button>
-                </InlineStack>
-              )}
-            </BlockStack>
-          </Card>
+          <Text as="p" tone="subdued">
+            Last {TREND_DAYS} days
+          </Text>
         </Layout.Section>
+
+        <Layout.Section>
+          <InlineGrid columns={{ xs: 1, md: 2 }} gap="400">
+            <TrendChart
+              title="New wishlists"
+              total={newWishlistsLast30}
+              data={newWishlistsTrend}
+            />
+            <TrendChart
+              title="Saved items"
+              total={savedItemsLast30}
+              data={savedItemsTrend}
+            />
+          </InlineGrid>
+        </Layout.Section>
+
         <Layout.Section>
           <InlineGrid columns={{ xs: 1, sm: 2, md: 4 }} gap="400">
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Wishlists
+                  Total wishlists
                 </Text>
                 <Text as="p" variant="heading2xl">
                   {totalWishlists}
@@ -210,7 +223,7 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Products
+                  Products wishlisted
                 </Text>
                 <Text as="p" variant="heading2xl">
                   {totalProducts}
@@ -221,7 +234,7 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Total Value
+                  Total value
                 </Text>
                 <Text as="p" variant="heading2xl">
                   ${totalValue.toFixed(2)}
@@ -232,7 +245,7 @@ export default function Dashboard() {
             <Card>
               <BlockStack gap="200">
                 <Text as="h3" variant="headingMd" tone="subdued">
-                  Average Wishlist
+                  Average wishlist
                 </Text>
                 <Text as="p" variant="heading2xl">
                   ${averageWishlist.toFixed(2)}
@@ -241,64 +254,7 @@ export default function Dashboard() {
             </Card>
           </InlineGrid>
         </Layout.Section>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="300">
-              <InlineStack align="space-between" blockAlign="center">
-                <Text as="h2" variant="headingMd">
-                  Most wishlisted products
-                </Text>
-                <Button onClick={handleExportCsv} loading={isExporting}>
-                  Export CSV
-                </Button>
-              </InlineStack>
-              {topProducts.length === 0 ? (
-                <Text as="p" tone="subdued">
-                  No wishlist activity yet.
-                </Text>
-              ) : (
-                <BlockStack gap="200">
-                  {topProducts.map((product, index) => (
-                    <InlineStack
-                      key={product.title + index}
-                      align="space-between"
-                      blockAlign="center"
-                      gap="300"
-                    >
-                      <InlineStack gap="300" blockAlign="center">
-                        {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.title}
-                            style={{
-                              width: 40,
-                              height: 40,
-                              objectFit: "cover",
-                              borderRadius: 6,
-                            }}
-                          />
-                        ) : (
-                          <div
-                            style={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: 6,
-                              background: "#f1f1f1",
-                            }}
-                          />
-                        )}
-                        <Text as="span">{product.title}</Text>
-                      </InlineStack>
-                      <Text as="span" tone="subdued">
-                        {product.count} {product.count === 1 ? "wishlist" : "wishlists"}
-                      </Text>
-                    </InlineStack>
-                  ))}
-                </BlockStack>
-              )}
-            </BlockStack>
-          </Card>
-        </Layout.Section>
+
         <Layout.Section>
           <Card>
             <InlineStack align="space-between" blockAlign="center" wrap gap="400">
@@ -349,6 +305,7 @@ export default function Dashboard() {
           </Card>
         </Layout.Section>
       </Layout>
+      <div style={{ height: 40 }} />
     </Page>
   );
 }
