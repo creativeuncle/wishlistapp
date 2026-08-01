@@ -177,11 +177,9 @@ export default function Settings() {
     <Page title="Settings">
       <Layout>
         <Layout.Section>
-          <BlockStack gap="200">
-            <Text as="h2" variant="headingLg">
-              Customizations
-            </Text>
-          </BlockStack>
+          <Text as="h2" variant="headingLg">
+            Customizations
+          </Text>
         </Layout.Section>
 
         <Layout.Section>
@@ -249,11 +247,378 @@ export default function Settings() {
         </Layout.Section>
 
         <Layout.Section>
-          <BlockStack gap="200">
-            <Text as="h2" variant="headingLg">
-              Integrations
-            </Text>
-          </BlockStack>
+          <div
+            style={{
+              display: "flex",
+              gap: 20,
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+            }}
+          >
+            <div style={{ flex: "1 1 360px", minWidth: 320 }}>
+              <Card>
+                <BlockStack gap="400">
+                  <BlockStack gap="100">
+                    <Text as="h2" variant="headingMd">
+                      Add to Wishlist button
+                    </Text>
+                    <Text as="p" tone="subdued">
+                      Customize the add and remove Wishlist buttons on
+                      product pages.
+                    </Text>
+                  </BlockStack>
+
+                  <Checkbox
+                    label="Show the Add to Wishlist button below the Add to Cart button on the product page"
+                    checked={atcEnabled}
+                    onChange={setAtcEnabled}
+                  />
+
+                  <TextField
+                    label="Add to Wishlist button text"
+                    value={addText}
+                    onChange={setAddText}
+                    autoComplete="off"
+                  />
+
+                  <BlockStack gap="100">
+                    <TextField
+                      label="Remove from Wishlist button text"
+                      value={removeText}
+                      onChange={setRemoveText}
+                      autoComplete="off"
+                    />
+                    <Text as="p" tone="subdued">
+                      Shown once the product is already in the wishlist.
+                      When clicked, the product will be removed from the
+                      wishlist.
+                    </Text>
+                  </BlockStack>
+
+                  <BlockStack gap="100">
+                    <Text as="p">Button style</Text>
+                    <ButtonGroup variant="segmented">
+                      <Button
+                        pressed={style === "filled"}
+                        onClick={() => setStyle("filled")}
+                      >
+                        Filled
+                      </Button>
+                      <Button
+                        pressed={style === "outline"}
+                        onClick={() => setStyle("outline")}
+                      >
+                        Outline
+                      </Button>
+                    </ButtonGroup>
+                  </BlockStack>
+
+                  <InlineStack gap="400" wrap>
+                    <BlockStack gap="100">
+                      <Text as="p">Background</Text>
+                      <InlineStack gap="200" blockAlign="center">
+                        <input
+                          type="color"
+                          value={bgColor}
+                          onChange={(e) => setBgColor(e.target.value)}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            padding: 0,
+                            border: "1px solid #ccc",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                          }}
+                        />
+                        <div style={{ width: 140 }}>
+                          <TextField
+                            label="Background hex"
+                            labelHidden
+                            value={bgColor}
+                            onChange={setBgColor}
+                            autoComplete="off"
+                          />
+                        </div>
+                      </InlineStack>
+                    </BlockStack>
+
+                    <BlockStack gap="100">
+                      <Text as="p">Text</Text>
+                      <InlineStack gap="200" blockAlign="center">
+                        <input
+                          type="color"
+                          value={textColor}
+                          onChange={(e) => setTextColor(e.target.value)}
+                          style={{
+                            width: 36,
+                            height: 36,
+                            padding: 0,
+                            border: "1px solid #ccc",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                          }}
+                        />
+                        <div style={{ width: 140 }}>
+                          <TextField
+                            label="Text hex"
+                            labelHidden
+                            value={textColor}
+                            onChange={setTextColor}
+                            autoComplete="off"
+                          />
+                        </div>
+                      </InlineStack>
+                    </BlockStack>
+                  </InlineStack>
+
+                  <div style={{ maxWidth: 200 }}>
+                    <TextField
+                      label="Corner radius"
+                      type="number"
+                      min={0}
+                      max={40}
+                      value={cornerRadius}
+                      onChange={setCornerRadius}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <InlineStack gap="300" align="start">
+                    <Button
+                      onClick={handleSaveAtcButton}
+                      loading={atcFetcher.state !== "idle"}
+                    >
+                      Save button settings
+                    </Button>
+                  </InlineStack>
+                </BlockStack>
+              </Card>
+            </div>
+
+            <div style={{ flex: "2 1 480px", minWidth: 320 }}>
+              <Card padding="0">
+                <div
+                  style={{
+                    border: "1px solid #e1e1e1",
+                    borderRadius: 12,
+                    overflow: "hidden",
+                    background: "#fff",
+                  }}
+                >
+                  {/* Mock storefront header */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "14px 24px",
+                      borderBottom: "1px solid #eee",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 700,
+                        letterSpacing: 1,
+                        color: "#999",
+                      }}
+                    >
+                      [ Your store ]
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 20,
+                        color: "#333",
+                        fontSize: 14,
+                      }}
+                    >
+                      <span>Home</span>
+                      <span>Products</span>
+                      <span>Collection</span>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 16,
+                        alignItems: "center",
+                        color: "#333",
+                      }}
+                    >
+                      <span style={{ position: "relative" }}>
+                        ♡
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: -6,
+                            right: -8,
+                            background: "#111",
+                            color: "#fff",
+                            borderRadius: 999,
+                            fontSize: 10,
+                            width: 14,
+                            height: 14,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          1
+                        </span>
+                      </span>
+                      <span>🔍</span>
+                      <span>🛒</span>
+                    </div>
+                  </div>
+
+                  {/* Mock product page */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 32,
+                      padding: 32,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ flex: "1 1 240px", position: "relative" }}>
+                      <div
+                        style={{
+                          width: "100%",
+                          aspectRatio: "1 / 1",
+                          background: "#f1f1f1",
+                          borderRadius: 6,
+                        }}
+                      />
+                      <span
+                        style={{
+                          position: "absolute",
+                          top: 12,
+                          left: 12,
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          background: "#fff",
+                          boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        ♡
+                      </span>
+                    </div>
+
+                    <div style={{ flex: "1 1 220px" }}>
+                      <div
+                        style={{
+                          fontSize: 22,
+                          color: "#333",
+                          marginBottom: 6,
+                        }}
+                      >
+                        Product title
+                      </div>
+                      <div style={{ marginBottom: 20 }}>
+                        <span
+                          style={{
+                            textDecoration: "line-through",
+                            color: "#999",
+                            marginRight: 8,
+                          }}
+                        >
+                          $300 USD
+                        </span>
+                        <span style={{ color: "#333" }}>$200 USD</span>
+                      </div>
+
+                      <div style={{ marginBottom: 16 }}>
+                        <div
+                          style={{
+                            fontSize: 13,
+                            color: "#666",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Color
+                        </div>
+                        <div
+                          style={{
+                            border: "1px solid #ccc",
+                            borderRadius: 6,
+                            padding: "8px 12px",
+                            fontSize: 14,
+                            color: "#999",
+                          }}
+                        >
+                          Select
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled
+                        style={{
+                          width: "100%",
+                          padding: "13px 16px",
+                          marginBottom: 8,
+                          border: "1px solid #ccc",
+                          borderRadius: 6,
+                          background: "#e8e8e8",
+                          color: "#999",
+                          fontWeight: 600,
+                          fontSize: 14,
+                        }}
+                      >
+                        Add to cart
+                      </button>
+
+                      {atcEnabled && (
+                        <button
+                          type="button"
+                          style={{
+                            width: "100%",
+                            padding: "13px 16px",
+                            marginBottom: 16,
+                            fontWeight: 600,
+                            fontSize: 14,
+                            cursor: "pointer",
+                            borderRadius: `${parseInt(cornerRadius, 10) || 0}px`,
+                            border: `1px solid ${bgColor}`,
+                            background:
+                              style === "outline" ? "transparent" : bgColor,
+                            color: style === "outline" ? bgColor : textColor,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: 8,
+                          }}
+                        >
+                          ♡ {addText || "Add to Wishlist"}
+                        </button>
+                      )}
+
+                      <div
+                        style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}
+                      >
+                        Add a detailed description of your product, including
+                        its key features, size and weight, and any important
+                        information customers should know.
+                        <ul style={{ marginTop: 8, paddingLeft: 18 }}>
+                          <li>Material: What is the product made of?</li>
+                          <li>Dimensions: What is the size of the product?</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </div>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Text as="h2" variant="headingLg">
+            Integrations
+          </Text>
         </Layout.Section>
         <Layout.Section>
           <Card>
@@ -283,319 +648,6 @@ export default function Settings() {
                 </Button>
               </InlineStack>
             </BlockStack>
-          </Card>
-        </Layout.Section>
-
-        <Layout.Section variant="oneThird">
-          <Card>
-            <BlockStack gap="400">
-              <BlockStack gap="100">
-                <Text as="h2" variant="headingMd">
-                  Add to Wishlist button
-                </Text>
-                <Text as="p" tone="subdued">
-                  Customize the add and remove Wishlist buttons on product
-                  pages.
-                </Text>
-              </BlockStack>
-
-              <Checkbox
-                label="Show the Add to Wishlist button below the Add to Cart button on the product page"
-                checked={atcEnabled}
-                onChange={setAtcEnabled}
-              />
-
-              <TextField
-                label="Add to Wishlist button text"
-                value={addText}
-                onChange={setAddText}
-                autoComplete="off"
-              />
-
-              <BlockStack gap="100">
-                <TextField
-                  label="Remove from Wishlist button text"
-                  value={removeText}
-                  onChange={setRemoveText}
-                  autoComplete="off"
-                />
-                <Text as="p" tone="subdued">
-                  Shown once the product is already in the wishlist. When
-                  clicked, the product will be removed from the wishlist.
-                </Text>
-              </BlockStack>
-
-              <BlockStack gap="100">
-                <Text as="p">Button style</Text>
-                <ButtonGroup variant="segmented">
-                  <Button
-                    pressed={style === "filled"}
-                    onClick={() => setStyle("filled")}
-                  >
-                    Filled
-                  </Button>
-                  <Button
-                    pressed={style === "outline"}
-                    onClick={() => setStyle("outline")}
-                  >
-                    Outline
-                  </Button>
-                </ButtonGroup>
-              </BlockStack>
-
-              <InlineStack gap="400" wrap>
-                <BlockStack gap="100">
-                  <Text as="p">Background</Text>
-                  <InlineStack gap="200" blockAlign="center">
-                    <input
-                      type="color"
-                      value={bgColor}
-                      onChange={(e) => setBgColor(e.target.value)}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        padding: 0,
-                        border: "1px solid #ccc",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                      }}
-                    />
-                    <div style={{ width: 140 }}>
-                      <TextField
-                        label="Background hex"
-                        labelHidden
-                        value={bgColor}
-                        onChange={setBgColor}
-                        autoComplete="off"
-                      />
-                    </div>
-                  </InlineStack>
-                </BlockStack>
-
-                <BlockStack gap="100">
-                  <Text as="p">Text</Text>
-                  <InlineStack gap="200" blockAlign="center">
-                    <input
-                      type="color"
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      style={{
-                        width: 36,
-                        height: 36,
-                        padding: 0,
-                        border: "1px solid #ccc",
-                        borderRadius: 6,
-                        cursor: "pointer",
-                      }}
-                    />
-                    <div style={{ width: 140 }}>
-                      <TextField
-                        label="Text hex"
-                        labelHidden
-                        value={textColor}
-                        onChange={setTextColor}
-                        autoComplete="off"
-                      />
-                    </div>
-                  </InlineStack>
-                </BlockStack>
-              </InlineStack>
-
-              <div style={{ maxWidth: 200 }}>
-                <TextField
-                  label="Corner radius"
-                  type="number"
-                  min={0}
-                  max={40}
-                  value={cornerRadius}
-                  onChange={setCornerRadius}
-                  autoComplete="off"
-                />
-              </div>
-
-              <InlineStack gap="300" align="start">
-                <Button onClick={handleSaveAtcButton} loading={atcFetcher.state !== "idle"}>
-                  Save button settings
-                </Button>
-              </InlineStack>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-
-        <Layout.Section>
-          <Card padding="0">
-            <div
-              style={{
-                border: "1px solid #e1e1e1",
-                borderRadius: 12,
-                overflow: "hidden",
-                background: "#fff",
-              }}
-            >
-              {/* Mock storefront header */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "14px 24px",
-                  borderBottom: "1px solid #eee",
-                }}
-              >
-                <div style={{ fontWeight: 700, letterSpacing: 1, color: "#999" }}>
-                  [ Your store ]
-                </div>
-                <div style={{ display: "flex", gap: 20, color: "#333", fontSize: 14 }}>
-                  <span>Home</span>
-                  <span>Products</span>
-                  <span>Collection</span>
-                </div>
-                <div style={{ display: "flex", gap: 16, alignItems: "center", color: "#333" }}>
-                  <span style={{ position: "relative" }}>
-                    ♡
-                    <span
-                      style={{
-                        position: "absolute",
-                        top: -6,
-                        right: -8,
-                        background: "#111",
-                        color: "#fff",
-                        borderRadius: 999,
-                        fontSize: 10,
-                        width: 14,
-                        height: 14,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      1
-                    </span>
-                  </span>
-                  <span>🔍</span>
-                  <span>🛒</span>
-                </div>
-              </div>
-
-              {/* Mock product page */}
-              <div
-                style={{
-                  display: "flex",
-                  gap: 32,
-                  padding: 32,
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ flex: "1 1 320px", position: "relative" }}>
-                  <div
-                    style={{
-                      width: "100%",
-                      aspectRatio: "1 / 1",
-                      background: "#f1f1f1",
-                      borderRadius: 6,
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      top: 12,
-                      left: 12,
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: "#fff",
-                      boxShadow: "0 1px 4px rgba(0,0,0,0.15)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    ♡
-                  </span>
-                </div>
-
-                <div style={{ flex: "1 1 280px" }}>
-                  <div style={{ fontSize: 22, color: "#333", marginBottom: 6 }}>
-                    Product title
-                  </div>
-                  <div style={{ marginBottom: 20 }}>
-                    <span style={{ textDecoration: "line-through", color: "#999", marginRight: 8 }}>
-                      $300 USD
-                    </span>
-                    <span style={{ color: "#333" }}>$200 USD</span>
-                  </div>
-
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 13, color: "#666", marginBottom: 4 }}>
-                      Color
-                    </div>
-                    <div
-                      style={{
-                        border: "1px solid #ccc",
-                        borderRadius: 6,
-                        padding: "8px 12px",
-                        fontSize: 14,
-                        color: "#999",
-                      }}
-                    >
-                      Select
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled
-                    style={{
-                      width: "100%",
-                      padding: "13px 16px",
-                      marginBottom: 8,
-                      border: "1px solid #ccc",
-                      borderRadius: 6,
-                      background: "#e8e8e8",
-                      color: "#999",
-                      fontWeight: 600,
-                      fontSize: 14,
-                    }}
-                  >
-                    Add to cart
-                  </button>
-
-                  {atcEnabled && (
-                    <button
-                      type="button"
-                      style={{
-                        width: "100%",
-                        padding: "13px 16px",
-                        marginBottom: 16,
-                        fontWeight: 600,
-                        fontSize: 14,
-                        cursor: "pointer",
-                        borderRadius: `${parseInt(cornerRadius, 10) || 0}px`,
-                        border: `1px solid ${bgColor}`,
-                        background: style === "outline" ? "transparent" : bgColor,
-                        color: style === "outline" ? bgColor : textColor,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 8,
-                      }}
-                    >
-                      ♡ {addText || "Add to Wishlist"}
-                    </button>
-                  )}
-
-                  <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>
-                    Add a detailed description of your product, including its
-                    key features, size and weight, and any important
-                    information customers should know.
-                    <ul style={{ marginTop: 8, paddingLeft: 18 }}>
-                      <li>Material: What is the product made of?</li>
-                      <li>Dimensions: What is the size of the product?</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </div>
           </Card>
         </Layout.Section>
       </Layout>
