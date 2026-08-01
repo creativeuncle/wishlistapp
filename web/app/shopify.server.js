@@ -24,20 +24,17 @@ const shopify = shopifyApp({
   },
   hooks: {
     afterAuth: async ({ session }) => {
-      const settings = await prisma.shopSettings.upsert({
+      // Only ensure a ShopSettings row exists here. Creating the wishlist
+      // page itself is left to the interactive "Create Wishlist Page"
+      // button in Settings (authenticate.admin(request)'s admin client) -
+      // shopify.unauthenticated.admin() built from this hook's background
+      // session is unreliable under the token-exchange auth strategy and
+      // was producing confusing 403s unrelated to actual scope grants.
+      await prisma.shopSettings.upsert({
         where: { shop: session.shop },
         update: {},
         create: { shop: session.shop, enabled: true },
       });
-
-      if (!settings.wishlistPageUrl) {
-        try {
-          const { admin } = await shopify.unauthenticated.admin(session.shop);
-          await createWishlistPage(admin, session.shop);
-        } catch (error) {
-          console.error("Could not auto-create wishlist page:", error);
-        }
-      }
     },
   },
 });
