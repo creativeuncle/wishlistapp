@@ -45,6 +45,20 @@ const shopify = shopifyApp({
 // `admin` is the GraphQL client returned by `authenticate.admin(request)` or
 // `unauthenticated.admin(shop)` - both expose `.graphql(query, options)`.
 export async function createWishlistPage(admin, shop) {
+  let grantedScopes = null;
+  try {
+    const scopesResponse = await admin.graphql(
+      `#graphql
+      query CurrentScopes { currentAppInstallation { accessScopes { handle } } }`,
+    );
+    const scopesJson = await scopesResponse.json();
+    grantedScopes = (
+      scopesJson.data?.currentAppInstallation?.accessScopes || []
+    ).map((s) => s.handle);
+  } catch (error) {
+    grantedScopes = [`(could not check: ${error?.message || error})`];
+  }
+
   let createPageResponse;
   try {
     createPageResponse = await admin.graphql(
@@ -69,7 +83,7 @@ export async function createWishlistPage(admin, shop) {
   } catch (error) {
     if (error?.response?.code === 403 || /\b403\b/.test(String(error?.message))) {
       throw new Error(
-        "This store hasn't approved the app's page-editing permission yet. " +
+        `Missing "write_content" permission. Currently granted scopes: ${grantedScopes?.join(", ") || "unknown"}. ` +
           "Uninstall and reinstall the app from Shopify Admin > Apps to grant the updated permissions, then try again.",
       );
     }
