@@ -45,25 +45,36 @@ const shopify = shopifyApp({
 // `admin` is the GraphQL client returned by `authenticate.admin(request)` or
 // `unauthenticated.admin(shop)` - both expose `.graphql(query, options)`.
 export async function createWishlistPage(admin, shop) {
-  const createPageResponse = await admin.graphql(
-    `#graphql
-    mutation CreateWishlistPage($page: PageCreateInput!) {
-      pageCreate(page: $page) {
-        page { id handle }
-        userErrors { field message }
-      }
-    }`,
-    {
-      variables: {
-        page: {
-          title: "Wishlist",
-          handle: "wishlist",
-          isPublished: true,
-          body: "<div id=\"wishlist-page-placeholder\"></div>",
+  let createPageResponse;
+  try {
+    createPageResponse = await admin.graphql(
+      `#graphql
+      mutation CreateWishlistPage($page: PageCreateInput!) {
+        pageCreate(page: $page) {
+          page { id handle }
+          userErrors { field message }
+        }
+      }`,
+      {
+        variables: {
+          page: {
+            title: "Wishlist",
+            handle: "wishlist",
+            isPublished: true,
+            body: "<div id=\"wishlist-page-placeholder\"></div>",
+          },
         },
       },
-    },
-  );
+    );
+  } catch (error) {
+    if (error?.response?.code === 403 || /\b403\b/.test(String(error?.message))) {
+      throw new Error(
+        "This store hasn't approved the app's page-editing permission yet. " +
+          "Uninstall and reinstall the app from Shopify Admin > Apps to grant the updated permissions, then try again.",
+      );
+    }
+    throw error;
+  }
   const createPageJson = await createPageResponse.json();
 
   const page = createPageJson.data?.pageCreate?.page;
