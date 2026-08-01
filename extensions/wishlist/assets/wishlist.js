@@ -204,22 +204,37 @@
     return match ? match[1] : null;
   }
 
+  function hasClippingOverflow(el) {
+    var style = window.getComputedStyle(el);
+    return (
+      style.overflow === "hidden" ||
+      style.overflow === "clip" ||
+      style.overflowX === "hidden" ||
+      style.overflowY === "hidden"
+    );
+  }
+
   function findCardAnchor(link) {
     // Walk up a few levels to find a reasonable "card" container to anchor
     // the heart button to (so it sits in the top-right of the image/card,
-    // not the whole page).
+    // not the whole page). Many themes (Dawn-based ones like Focal) nest an
+    // `overflow: hidden` media wrapper - with class names that also match
+    // "card" - inside the real card, which would silently clip an
+    // absolutely-positioned heart button. Keep climbing past those.
     var el = link;
-    for (var i = 0; i < 4 && el.parentElement; i++) {
+    var lastMatch = null;
+    for (var i = 0; i < 8 && el.parentElement; i++) {
       el = el.parentElement;
       if (
         el.matches(
           '[class*="card"], [class*="grid-item"], [class*="product-item"], li'
         )
       ) {
-        return el;
+        lastMatch = el;
+        if (!hasClippingOverflow(el)) return el;
       }
     }
-    return link.parentElement || link;
+    return lastMatch || link.parentElement || link;
   }
 
   function injectHearts() {
